@@ -544,15 +544,15 @@ logic_comp_2 ()
   char *chk2 = 0;
   char *chk3 = 0;
   char *chk4 = 0;
-  int chkint;
-  int chk2int;
-  int clen;
+  int chkint = 0;
+  int chk2int = 0;
+  int clen = 0;
   int coreint = 0;
   int coreintconv = 0;
   int groupchk = 0;
   int count = 0;
   int count2 = 0;
-  int res;
+  int res = 0;
   int charnum = 0;
   char *pattern_a;
   char *pattern_b;
@@ -595,7 +595,7 @@ logic_comp_2 ()
             }
           else
             {
-              chk = "";
+          chk = "";
             }
         }
       chkint = atoi (chk);
@@ -619,7 +619,7 @@ logic_comp_2 ()
                   coreintconv = 0;
                 }
               sprintf (coreconv, "%d", coreintconv);
-              pattern_n[0]='\0';
+          pattern_n[0]='\0';
               strcat (pattern_n, pattern_a);
               strcat (pattern_n, coreconv);
               strcat (pattern_n, pattern_b);
@@ -747,36 +747,28 @@ logic_comp_n (int dim)
   int sum = 0;
   int count = 0;
   int count2 = 0;
-  int res;
+  int countpast = 0;
+  int res = 0;
   int charnum = 0;
   char *line;
-  char *org_line;
-  char **pattern;
-  char **pattern_n;
-  char **p1;
-  char **p2;
-  char **core;
-  char **core_n;
-  int* omp_sum;
-  int* logic_comp_n_flag;
-  int* omp_count;
-  int* omp_count_past;
-  int *omp_org_flag;
-  int *omp_coreint = 0;
-  int *omp_coreintpast = 0;
-  int *omp_coreint_n = 0;
-  int br_flag = 0;
-  int coreint;
-  int coreint_n;
-  int coreintpast;
+  char ***pattern;
+  char ***pattern_n;
+  char ***p1;
+  char ***p2;
+  char ***core;
+  char ***core_n;
+  int org_flag = 0;
+  int coreint = 0;
+  int coreint_n = 0;
+  int coreintpast = 0;
+  char ***pattern_store;
+  int *pattern_count;
 
   struct_add ();
   charnum = strlen (block_list.block[block_list.block_num - 2].table[0]);
   line = (char *) malloc (sizeof (char) * (charnum + 1));
-  compn_temp = (char **) malloc (sizeof (char *) * 1);
   compn_temp_line = block_list.block[block_list.block_num - 2].size - 1;
-  compn_temp =
-    (char **) realloc (compn_temp, sizeof (char *) * compn_temp_line);
+  compn_temp = (char **) malloc (sizeof (char *) * compn_temp_line);
   for (int i = 0; i < compn_temp_line; i++)
     {
       compn_temp[i] = (char *) malloc (sizeof (char) * (charnum + 1));
@@ -786,60 +778,59 @@ logic_comp_n (int dim)
   sprintf (line, "%s", compn_temp[0]);
   strtok (line, " ");
   len = strlen (line);
-  org_line = (char *) malloc (sizeof (char) * (len + 4));
-  pattern = (char **) malloc (sizeof (char *) * dim);
-  pattern_n = (char **) malloc (sizeof (char *) * (dim + 3));
-  p1 = (char **) malloc (sizeof (char *) * dim);
-  p2 = (char **) malloc (sizeof (char *) * dim);
-  core = (char **) malloc (sizeof (char *) * dim);
-  core_n = (char **) malloc (sizeof (char *) * dim);
-  for (int i = 0; i < dim; i++)
+  pattern = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  pattern_n = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  p1 = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  p2 = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  core = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  core_n = (char ***) malloc (sizeof (char **) * compn_temp_line);
+  pattern_count=(int*)malloc(sizeof(int) * compn_temp_line);
+  pattern_store=(char***)malloc(sizeof(char**) * compn_temp_line);
+  for (int j = 0; j < compn_temp_line ; j++)
     {
-      pattern[i] = (char *) malloc (sizeof (char) * (len + 1));
-      pattern_n[i] = (char *) malloc (sizeof (char) * (len + 1));
-      p1[i] = (char *) malloc (sizeof (char) * (len + 1));
-      p2[i] = (char *) malloc (sizeof (char) * (len + 1));
-      core[i] = (char *) malloc (sizeof (char *) * 2);
-      core_n[i] = (char *) malloc (sizeof (char *) * 2);
-    }
-  omp_sum = (int*) malloc (sizeof(int) * dim);
-  omp_coreint = (int*) malloc (sizeof(int) * dim);
-  omp_coreint_n = (int*) malloc (sizeof(int) * dim);
-  omp_coreintpast = (int*) malloc (sizeof(int) * dim);
-  for (int l = 0; l < dim; l++)
+      pattern[j] = (char **) malloc (sizeof (char *) * dim);
+      pattern_n[j] = (char **) malloc (sizeof (char *) * dim);
+      p1[j] = (char **) malloc (sizeof (char *) * dim);
+      p2[j] = (char **) malloc (sizeof (char *) * dim);
+      core[j] = (char **) malloc (sizeof (char *) * dim);
+      core_n[j] = (char **) malloc (sizeof (char *) * dim);
+      for (int i = 0; i < dim; i++)
     {
-      omp_sum[l] = 0;
-      omp_coreint[l] = 0;
-      omp_coreint_n[l] = 0;
-      omp_coreintpast[l] = 0;
+      pattern[j][i] = (char *) malloc (sizeof (char) * (len + 1));
+      pattern_n[j][i] = (char *) malloc (sizeof (char) * (len + 1));
+      p1[j][i] = (char *) malloc (sizeof (char) * (len + 1));
+      p2[j][i] = (char *) malloc (sizeof (char) * (len + 1));
+      core[j][i] = (char *) malloc (sizeof (char *) * 2);
+      core_n[j][i] = (char *) malloc (sizeof (char *) * 2);
     }
-  logic_comp_n_flag = (int*) malloc (sizeof(int) * dim);
-  omp_count = (int*) malloc (sizeof(int) * dim);
-  omp_count_past = (int*) malloc (sizeof(int) * dim);
-  omp_org_flag = (int*) malloc (sizeof(int) * dim);
+      pattern_store[j]=(char**)malloc(sizeof(char*) * 1);
+      pattern_count[j]=0;
+    }
 
+#pragma omp parallel for private(coreint,coreintpast,coreint_n,sum,count,org_flag, countpast)
   for (int i = 0; i < compn_temp_line; i++)
     {
       for (int j = 0; j < dim; j++)
         {
-          strncpy(pattern[j], compn_temp[i] + (j * (len + 1)),len);
-          pattern[j][len]='\0';
+      strncpy(pattern[i][j], compn_temp[i] + (j * (len + 1)),len);
+      pattern[i][j][len]='\0';
         }
       for (int k = 0; k < len; k++)
         {
           sum = 0;
-          count = 0;
+      count = 0;
+      coreintpast = 0;
           for (int l = 0; l < dim; l++)
             {
-              strncpy (&p1[l][0], &pattern[l][0], k);
-              p1[l][k] = '\0';
-              strncpy (&core[l][0], &pattern[l][k], 1);
-              core[l][1] = '\0';
-              strncpy (&p2[l][0], &pattern[l][k + 1], len - k - 1);
-              p2[l][len - k - 1] = '\0';
-              coreint = atoi (&core[l][0]);
+              strncpy (&p1[i][l][0], &pattern[i][l][0], k);
+              p1[i][l][k] = '\0';
+              strncpy (&core[i][l][0], &pattern[i][l][k], 1);
+              core[i][l][1] = '\0';
+              strncpy (&p2[i][l][0], &pattern[i][l][k + 1], len - k - 1);
+              p2[i][l][len - k - 1] = '\0';
+              coreint = atoi (&core[i][l][0]);
               coreint_n = 1 - coreint;
-              sprintf (&core_n[l][0], "%d", coreint_n);
+              sprintf (&core_n[i][l][0], "%d", coreint_n);
               if (l == 0)
                 {
                   coreintpast = coreint;
@@ -849,7 +840,7 @@ logic_comp_n (int dim)
                   if (coreint != coreintpast)
                     {
                       sum = 1;
-                      break;
+              break;
                     }
                   else
                     {
@@ -859,61 +850,63 @@ logic_comp_n (int dim)
             }
           if (sum == 0)
             {
-#pragma omp parallel for
               for (int m = 0; m < dim; m++)
                 {
-                  logic_comp_n_flag[m] = 0;
-                  omp_count[m] = 0;
-                  omp_count_past[m] = 0;
-                  omp_org_flag[m] = 0;
-                  pattern_n[m][0] = '\0';
-                  strcat (pattern_n[m], p1[m]);
-                  strcat (pattern_n[m], core_n[m]);
-                  strcat (pattern_n[m], p2[m]);
-                  omp_count_past[m] = omp_count[m];
-                  for (int n = 0; n < table_master_line; n++)
-                    {
-                      if(logic_comp_n_flag[m] != 0)
-                        {
-                          continue;
-                        }
-                      if (strstr (table_master[n], pattern_n[m]))
-                        {
-                          if (strstr (table_master[n], " 1"))
-                            {
-                              omp_count[m]++;
-                              logic_comp_n_flag[m] = 1;
-                            }
-                          else
-                            {
-                              omp_org_flag[m]++;
-                              logic_comp_n_flag[m] = 1;
-                            }
-                        }
-                    }
-                  if (omp_org_flag[m] == 0 && omp_count_past[m] == omp_count[m])
-                    {
-                      omp_count[m]++;
-                    }
+          org_flag = 0;
+          pattern_n[i][m][0] = '\0';
+          strcat (pattern_n[i][m], p1[i][m]);
+          strcat (pattern_n[i][m], core_n[i][m]);
+          strcat (pattern_n[i][m], p2[i][m]);
+          countpast = count;
+          for (int n = 0; n < table_master_line; n++)
+            {
+              if (strstr (table_master[n], pattern_n[i][m]))
+            {
+              if (strstr (table_master[n], " 1"))
+                {
+                  count++;
+                  break;
                 }
-              for (int m = 0; m < dim; m++)
+              else
                 {
-                  count += omp_count[m];
+                  org_flag++;
+                  break;
+                }
+            }
+            }
+          if (org_flag == 0 && count == countpast)
+                    {
+              count++;
+                    }
                 }
               if (count == dim)
                 {
+          if(pattern_count[i] > 0)
+            {
+              pattern_store[i]=(char**)realloc(pattern_store[i],sizeof(char*)*(pattern_count[i]+1));
+            }
+          pattern_store[i][pattern_count[i]]=(char*)malloc(sizeof(char)*(charnum+1)*2);
+          pattern_store[i][pattern_count[i]][0]='\0';
                   for (int n = 0; n < dim; n++)
                     {
-                      table_write (pattern[n], 0);
-                      table_write (" ", 0);
-                      table_write (pattern_n[n], 0);
-                      table_write (" ", 0);
+                      strcat(pattern_store[i][pattern_count[i]],pattern[i][n]);
+                      strcat(pattern_store[i][pattern_count[i]]," ");
+                      strcat(pattern_store[i][pattern_count[i]],pattern_n[i][n]);
+                      strcat(pattern_store[i][pattern_count[i]]," ");
                     }
-                  table_add (0);
-                  count2++;
+          pattern_count[i]++;
                 }
             }
         }
+    }
+  for (int i = 0; i < compn_temp_line; i++)
+    {
+      for (int j = 0 ; j < pattern_count[i]; j++)
+    {
+      table_write(pattern_store[i][j],0);
+      table_add(0);
+      count2++;
+    }
     }
   if (count2 > 1)
     {
@@ -929,14 +922,29 @@ logic_comp_n (int dim)
     {
       res = 0;
     }
-  for (int i = 0; i < dim; i++)
+  for (int j = 0; j < compn_temp_line; j++)
     {
-      free (pattern[i]);
-      free (pattern_n[i]);
-      free (p1[i]);
-      free (p2[i]);
-      free (core[i]);
-      free (core_n[i]);
+      for (int i = 0; i < dim; i++)
+    {
+      free (pattern[j][i]);
+      free (pattern_n[j][i]);
+      free (p1[j][i]);
+      free (p2[j][i]);
+      free (core[j][i]);
+      free (core_n[j][i]);
+    }
+      for (int k = 0 ; k < pattern_count[j]; k++)
+    {
+      free (pattern_store[j][k]);
+    }
+      free (pattern_store[j]);
+      free (compn_temp[j]);
+      free (pattern[j]);
+      free (pattern_n[j]);
+      free (p1[j]);
+      free (p2[j]);
+      free (core[j]);
+      free (core_n[j]);
     }
   free (pattern);
   free (pattern_n);
@@ -945,20 +953,9 @@ logic_comp_n (int dim)
   free (core);
   free (core_n);
   free (line);
-  free (org_line);
-  for (int i = 0; i < compn_temp_line; i++)
-    {
-      free (compn_temp[i]);
-    }
   free (compn_temp);
-  free(omp_sum);
-  free(omp_coreint);
-  free(omp_coreint_n);
-  free(omp_coreintpast);
-  free(logic_comp_n_flag);
-  free(omp_count);
-  free(omp_count_past);
-  free(omp_org_flag);
+  free(pattern_store);
+  free(pattern_count);
   return res;
 }
 
@@ -1004,27 +1001,26 @@ split_space (int *result, char *str)
   return count;
 }
 
-
 int
 resize (int dim)
 {
   int *omp_n_stop;
   char *line;
-  int *pos;
+  char **omp_line;
   int **omp_pos;
-  int *i_part;
   int **omp_i_part;
   int *fp2_i_buff;
   char *fp2buff;
-  int i_buff_len;
+  int i_buff_len = 0;
   int line_num = 0;
   int count = 0;
-  int count2 = 0;
+  int *omp_count;
   int *omp_br;
-  int *omp_br_stop;
   int charnum = 0;
-  char **resize_temp;
+  char ***omp_resize_temp;
   int resize_temp_line = 0;
+  int *omp_resize_temp_line;
+  int block_size = 0;
 
   printf ("Resize ");
   charnum = strlen (block_list.block[block_list.block_num - 1].table[0]) + 2;
@@ -1041,7 +1037,6 @@ resize (int dim)
     }
   sprintf (line, "%s", block_list.block[block_list.block_num - 1].table[0]);
   fp2_i_buff = (int *) malloc (line_num * i_buff_len * sizeof (int));
-
   fp2buff = (char *) malloc (line_num * (charnum + 2));
   for (int i = 0; i < line_num; i++)
     {
@@ -1051,122 +1046,107 @@ resize (int dim)
       split_space (fp2_i_buff + i * i_buff_len, line);
     }
   strtok (line, " ");
-  i_part = (int *) malloc (sizeof (int) * dim);
-  resize_temp = (char **) malloc (sizeof (char *) * 1);
-  line =
-    (char *) realloc (line,
-                      sizeof (char) *
-                      (strlen
-                       (block_list.block[block_list.block_num - 2].table[0]) +
-                       1));
-
-  omp_br=(int*)malloc(sizeof(int) * line_num);
-  omp_br_stop=(int*)malloc(sizeof(int) * line_num);
-  omp_n_stop=(int*)malloc(sizeof(int) * line_num);
-  for (int i = 0; i < line_num; i++)
+  omp_resize_temp=(char***)malloc(sizeof(char**) * block_list.block[block_list.block_num - 2].size);
+  omp_line=(char**)malloc(sizeof(char*) * block_list.block[block_list.block_num - 2].size);
+  omp_count=(int*)malloc(sizeof(int) * block_list.block[block_list.block_num - 2].size);
+  omp_resize_temp_line=(int*)malloc(sizeof(int) * block_list.block[block_list.block_num - 2].size);
+  omp_br=(int*)malloc(sizeof(int) *  block_list.block[block_list.block_num - 2].size);
+  omp_n_stop=(int*)malloc(sizeof(int) *  block_list.block[block_list.block_num - 2].size);
+  omp_pos=(int**)malloc(sizeof(int*) * block_list.block[block_list.block_num - 2].size);
+  omp_i_part=(int**)malloc(sizeof(int*) * block_list.block[block_list.block_num - 2].size);
+  for (int m = 0; m < block_list.block[block_list.block_num - 2].size - 1; m++)
     {
-      omp_n_stop[i] = 0;
-      omp_br[i] = 0;
-      omp_br_stop[i]=0;
+      omp_resize_temp[m]=(char **) malloc (sizeof (char *) * 1);
+      omp_line[m]=(char *)malloc(sizeof (char) *(strlen(block_list.block[block_list.block_num - 2].table[0])+1));
+      omp_count[m]=0;
+      omp_resize_temp_line[m]=0;
+      omp_n_stop[m] = 0;
+      omp_br[m] = 0;
+      omp_i_part[m] = (int *) malloc (sizeof (int) * dim);
     }
-  omp_pos=(int**)malloc(sizeof(int*) * line_num);
-  omp_i_part=(int**)malloc(sizeof(int*) * line_num);
-  for (int i = 0; i < line_num; i++)
+#pragma omp parallel for private(count)
+  for (int m = 0; m < block_list.block[block_list.block_num - 2].size - 1; m++)
     {
-      omp_i_part[i] = (int *) malloc (sizeof (int) * dim);
-    }
-
-  for (int m = 0; m < block_list.block[block_list.block_num - 2].size - 1;
-       m++)
-    {
-      sprintf (line, "%s",
-               block_list.block[block_list.block_num - 2].table[m]);
-      count = split_space (i_part, line);
-#pragma omp parallel for
+      sprintf (omp_line[m], "%s", block_list.block[block_list.block_num - 2].table[m]);
+      count = split_space (omp_i_part[m], omp_line[m]);
+      omp_count[m]=0;
       for (int i = 0; i < line_num; i++)
         {
-          for (int j = 0; j < dim ; j++)
+      omp_br[m] = 0;
+      for (int j = 0; j < count; j++)
             {
-              omp_i_part[i][j] = i_part[j];
-            }
-        }
-      count2 = 0;
-#pragma omp parallel for reduction(+: count2)
-      for (int i = 0; i < line_num; i++)
+          omp_pos[m] = fp2_i_buff + i * i_buff_len;
+          omp_n_stop[m]=i_buff_len;
+          for (int n = 0; n < i_buff_len; n++, omp_pos[m]++)
         {
-          omp_br[i] = 0;
-          omp_br_stop[i] = 0;
-          for (int j = 0; j < count; j++)
+          if (omp_i_part[m][j] == *omp_pos[m] && omp_n_stop[m] == i_buff_len)
             {
-              if(omp_br_stop[i]!=0)
-                {
-                  continue;
-                }
-              omp_pos[i] = fp2_i_buff + i * i_buff_len;
-              omp_n_stop[i]=i_buff_len;
-              for (int n = 0; n < i_buff_len; n++, omp_pos[i]++)
-                {
-                  if (omp_i_part[i][j] == *omp_pos[i])
-                    {
-                      if (omp_n_stop[i] != i_buff_len)
-                        {
-                          continue;
-                        }
-                      omp_n_stop[i] = n;
-                    }
-                }
-              if (omp_n_stop[i] < i_buff_len)
-                {
-                  omp_br[i]++;
-                }
-              else
-                {
-                  omp_br_stop[i] = 1;
-                }
-            }
-          if (omp_br[i] != count)
-            {
-              count2++;
+              omp_n_stop[m] = n;
+              break;
             }
         }
-
-      if (count2 == line_num)
+          if (omp_n_stop[m] < i_buff_len)
+        {
+          omp_br[m]++;
+        }
+          else
+        {
+          break;
+        }
+            }
+      if (omp_br[m] != count)
+            {
+          omp_count[m]++;
+            }
+        }
+      if (omp_count[m] == line_num)
+        {
+          omp_resize_temp_line[m]++;
+      omp_resize_temp[m]=(char **) realloc (omp_resize_temp[m],sizeof (char *) * omp_resize_temp_line[m]);
+      omp_resize_temp[m][omp_resize_temp_line[m] - 1]=(char *) malloc (sizeof (char) * charnum);
+      sprintf (omp_resize_temp[m][omp_resize_temp_line[m] - 1], "%s", omp_line[m]);
+        }
+    }
+  block_size=block_list.block[block_list.block_num - 2].size;
+  table_reset (block_list.block_num - 1);
+  for (int m = 0; m < block_size - 1; m++)
+    {
+      if(omp_resize_temp_line[m] > 0)
+    {
+      for (int i = 0; i < omp_resize_temp_line[m]; i++)
         {
           resize_temp_line++;
-          resize_temp =
-            (char **) realloc (resize_temp,
-                               sizeof (char *) * resize_temp_line);
-          resize_temp[resize_temp_line - 1] =
-            (char *) malloc (sizeof (char) * charnum);
-          sprintf (resize_temp[resize_temp_line - 1], "%s", line);
+          table_write (omp_resize_temp[m][i], block_list.block_num - 1);
+          table_add (block_list.block_num - 1);
         }
     }
-
-  table_reset (block_list.block_num - 1);
-  for (int i = 0; i < resize_temp_line; i++)
-    {
-      table_write (resize_temp[i], block_list.block_num - 1);
-      table_add (block_list.block_num - 1);
     }
   printf (" ..end table_%d : %d\n", dim, resize_temp_line);
-  for (int i = 0; i < resize_temp_line; i++)
+  for (int m = 0; m < block_size - 1 ; m++)
     {
-      free (resize_temp[i]);
+      for (int i = 0; i < omp_resize_temp_line[m]; i++)
+    {
+      free(omp_resize_temp[m][i]);
     }
-  free (resize_temp);
+      free(omp_resize_temp[m]);
+    }
+  free(omp_resize_temp);  
+  for (int i = 0; i < block_size - 1; i++)
+    {
+      free(omp_i_part[i]);
+      free(omp_line[i]);
+    }
+  free(omp_i_part);
+  free(omp_line);
+  free(omp_count);
+  free(omp_resize_temp_line);
   free (line);
   free (fp2buff);
   free (fp2_i_buff);
   free(omp_br);
   free(omp_n_stop);
-  free(omp_br_stop);
   free(omp_pos);
-  for (int i = 0; i < line_num; i++)
-    {
-      free(omp_i_part[i]);
-    }
-  free(i_part);
-  free(omp_i_part);
+
   if (resize_temp_line > 1)
     {
       return 1;
@@ -1179,8 +1159,6 @@ duplicate_detect (int dim)
 {
   char *line;
   char **part;
-  int line_num;
-  int count = 0;
   int *br;
   int chk = 0;
   int len = 0;
@@ -1195,7 +1173,6 @@ duplicate_detect (int dim)
   line = (char *) malloc (sizeof (char) * charnum);
   dup_temp = (char **) malloc (sizeof (char *) * 1);
   dup_list = (char **) malloc (sizeof (char *) * 1);
-  line_num = block_list.block[block_list.block_num - 2].size;
   sprintf (line, "%s", block_list.block[block_list.block_num - 2].table[0]);
   strtok (line, " ");
   len = strlen (line);
@@ -1209,71 +1186,71 @@ duplicate_detect (int dim)
   for (int i = 0; i < block_list.block[block_list.block_num - 2].size - 1;
        i++)
     {
-      count = 0;
+      chk = 0;
       for (int j = 0; j < dim; j++)
         {
           strncpy(part[j], block_list.block[block_list.block_num - 2].table[i] + (j * (len + 1)),len);
           part[j][len]='\0';
         }
-      for (int i = 0; i < dim; i++)
+#pragma omp parallel for shared(chk)
+      for (int j = 0; j < dim; j++)
         {
-          br[i] = 0;
-          for (int j = 0; j < table_master_line; j++)
+      if(chk==1)
+        {
+          continue;
+        }
+          br[j] = 0;
+      for (int k = 0; k < table_master_line; k++)
+        {
+          if (strstr (table_master[k], part[j]))
+        {
+          break;
+        }
+          else if (k == table_master_line - 1)
+                {
+                  br[j] = 2;
+                }
+        }
+          if (br[j] != 2)
             {
-              if (strstr (table_master[j], part[i]))
-                {
-                  break;
-                }
-              if (j == table_master_line - 1)
-                {
-                  br[i] = 2;
-                }
+          for (int l = 0;
+           l < block_list.block[block_list.block_num - 1].size - 1;
+           l++)
+        {
+          if (strstr (block_list.block[block_list.block_num - 1].table[l], part[j]))
+            {
+              br[j] = 2;
+              break;
             }
-          if (br[i] != 2)
-            {
-              for (int j = 0;
-                   j < block_list.block[block_list.block_num - 1].size - 1;
-                   j++)
+        }
+              if (br[j] != 2)
                 {
-                  if (strstr (block_list.block[block_list.block_num - 1].table[j], part[i]))
+                  for (int l = 0;
+                       l <
+             block_list.block[block_list.block_num - 2].size - 1;
+                       l++)
                     {
-                      br[i] = 2;
-                      break;
-                    }
-                }
-              if (br[i] != 2)
-                {
-                  for (int k = 0;
-                       k <
-                         block_list.block[block_list.block_num - 2].size - 1;
-                       k++)
-                    {
-                      if (strstr (block_list.block[block_list.block_num - 2].table[k], part[i]))
+              if (strstr (block_list.block[block_list.block_num - 2].table[l], part[j]))
                         {
-                          br[i]++;
+                          br[j]++;
                         }
                     }
                   if (dup_list_line != 0)
                     {
-                      for (int k = 0; k < dup_list_line; k++)
+                      for (int l = 0; l < dup_list_line; l++)
                         {
-                          if (strstr (dup_list[k], part[i]))
+                          if (strstr (dup_list[l], part[j]))
                             {
-                              br[i]--;
+                  br[j]--;
                             }
                         }
                     }
                 }
             }
-        }
-      chk = 0;
-      for (int l = 0; l < dim; l++)
-        {
-          if (br[l] < 2)
+          if (br[j] < 2)
             {
-              chk = 1;
-              break;
-            }
+          chk = 1;
+        }
         }
       if (chk == 1)
         {
@@ -1333,7 +1310,6 @@ duplicate_detect (int dim)
   free (br);
 }
 
-
 int
 logic_function (int dim)
 {
@@ -1373,7 +1349,7 @@ logic_function (int dim)
                   sum = 0;
                   for (int j = 0; j < dim; j++)
                     {
-                      strncpy (bit, line + (j * (len + 1)) + i, 1);
+              strncpy (bit, line + (j * (len + 1)) + i, 1);
                       bit[1] = '\0';
                       num = atoi (bit);
                       sum += num;
@@ -1440,7 +1416,17 @@ main (int argc, char *argv[])
   struct timeval start_timeval,
     end_timeval;
   double sec_timeofday;
+  FILE *fp;
 
+  fp = fopen(argv[1],"r");
+  if(argc < 2 || !fp)
+    {
+      return 1;
+    }
+  else
+    {
+      fclose(fp);
+    }
   gettimeofday (&start_timeval, NULL);
   struct_init ();
   argc = 0;
@@ -1463,9 +1449,9 @@ main (int argc, char *argv[])
             {
               comp = resize (dim);
               if (comp == 1)
-               {
+        {
                   duplicate_detect (dim);
-               }
+        }
             }
           else
             {
