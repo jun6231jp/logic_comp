@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <omp.h>
 #include <math.h>
-#include <mcheck.h>
+//#include <mcheck.h>
 
 typedef struct
 {
@@ -1241,7 +1241,7 @@ main (int argc, char *argv[])
   double sec_timeofday;
   FILE *fp;
   int charnum;
-  mtrace();
+  //mtrace();
   fp = fopen(argv[1],"r");
   if(argc < 2 || !fp)
     {
@@ -1284,6 +1284,6 @@ main (int argc, char *argv[])
     (double) (end_timeval.tv_sec - start_timeval.tv_sec) +
     (double) (end_timeval.tv_usec - start_timeval.tv_usec) / 1000000;
   printf ("exec time %.6f s\n", sec_timeofday);
-  muntrace();
+  //muntrace();
   return 0;
 }
