@@ -7,7 +7,9 @@
 #include <sys/time.h>
 #include <omp.h>
 #include <math.h>
-//#include <mcheck.h>
+#ifdef MTRACE
+#include <mcheck.h>
+#endif
 
 typedef struct
 {
@@ -1114,7 +1116,7 @@ logic_function (int dim)
   char * pattern;
   char bit[2] = { 0 };
 
-  pattern = (char*)malloc(sizeof(char) * pattern_len);
+  pattern = (char*)malloc(sizeof(char) * (pattern_len+1));
   for (int m = block_list.block_num - 1; m >= 0; m--)
     {
       flag = 0;
@@ -1200,16 +1202,19 @@ main (int argc, char *argv[])
     end_timeval;
   double sec_timeofday;
   FILE *fp;
-  //mtrace();
-  fp = fopen(argv[1],"r");
-  if(argc < 2 || !fp)
-    {
-      return 1;
-    }
-  else
-    {
-      fclose(fp);
-    }
+#ifdef MTRACE
+  mtrace();
+#endif
+  if(argc < 2)  {
+    fprintf(stderr, "Need more args.\n");
+    exit(-1);
+  }
+  if (!(fp = fopen(argv[1],"r"))) {
+    fprintf(stderr, "Failed to fopen %s\n", argv[1]);
+    exit(-1);
+  }
+  fclose(fp);
+
   gettimeofday (&start_timeval, NULL);
   struct_init ();
   argc = 0;
@@ -1239,6 +1244,8 @@ main (int argc, char *argv[])
     (double) (end_timeval.tv_sec - start_timeval.tv_sec) +
     (double) (end_timeval.tv_usec - start_timeval.tv_usec) / 1000000;
   printf ("exec time %.6f s\n", sec_timeofday);
-  //muntrace();
+#ifdef MTRACE
+  muntrace();
+#endif
   return 0;
 }
