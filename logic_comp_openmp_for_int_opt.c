@@ -1154,7 +1154,7 @@ logic_function (int dim)
   char * pattern;
   char bit[2] = { 0 };
 
-  pattern = (char*)malloc(sizeof(char) * pattern_len);
+  pattern = (char*)malloc(sizeof(char) * (pattern_len+1));
   for (int m = block_list.block_num - 1; m >= 0; m--)
     {
       flag = 0;
