@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <omp.h>
 #include <math.h>
-//#include <mcheck.h>
 
 typedef struct
 {
@@ -492,14 +491,19 @@ table_opt (char *filename, int start, int quiet)
     }
   else
     {
-      for (int i = start; i < ptnlen; i++)
+      for (int i = start; i < ptnlen+start; i++)
         {
+          int id = i;
+          if (id >= ptnlen)
+            {
+              id-=ptnlen;
+            }
           flag = 0;
           chk = 0;
           for (int j = 0; j < count - 1; j++)
             {
               sprintf (ref, "%s", table[j]);
-              for (int k = i; k < charnum - 1; k++)
+              for (int k = id; k < charnum - 1; k++)
                 {
                   ref[k] = ref[k + 1];
                 }
@@ -509,7 +513,7 @@ table_opt (char *filename, int start, int quiet)
               for (int l = j + 1; l < count; l++)
                 {
                   sprintf (ptn, "%s", table[l]);
-                  for (int m = i; m < charnum - 1; m++)
+                  for (int m = id; m < charnum - 1; m++)
                     {
                       ptn[m] = ptn[m + 1];
                     }
@@ -535,8 +539,8 @@ table_opt (char *filename, int start, int quiet)
             {
               for (int o = 0; o < count; o++)
                 {
-                  table[o][i] = '*';
-                  table_remake_ref[i] = '1';
+                  table[o][id] = '*';
+                  table_remake_ref[id] = '1';
                 }
             }
         }
@@ -1241,7 +1245,6 @@ main (int argc, char *argv[])
   double sec_timeofday;
   FILE *fp;
   int charnum;
-  //mtrace();
   fp = fopen(argv[1],"r");
   if(argc < 2 || !fp)
     {
@@ -1284,6 +1287,6 @@ main (int argc, char *argv[])
     (double) (end_timeval.tv_sec - start_timeval.tv_sec) +
     (double) (end_timeval.tv_usec - start_timeval.tv_usec) / 1000000;
   printf ("exec time %.6f s\n", sec_timeofday);
-  //muntrace();
+
   return 0;
 }
