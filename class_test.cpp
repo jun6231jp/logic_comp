@@ -1,112 +1,150 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
+
 using namespace std;
 
 /*
-1. table動的確保　済
-2. list動的確保
-3. スマートポインタで自動管理
-4. 参照渡しでメモリ削減
-5. オーバーライド
-6. 仮想関数
-7. 型推論
-8. C版以上に高速
-*/
+ * 1. table動的確保　済
+ * 2. list動的確保
+ * 3. スマートポインタで自動管理
+ * 4. 参照渡しでメモリ削減
+ * 5. オーバーライド
+ * 6. 仮想関数
+ * 7. 型推論
+ * 8. インライン関数
+ * 9. C版以上に高速
+ * */
+int globa_width=1;
 
 typedef vector< vector<int> > vec2;
 typedef vector< vec2 > vec3;
-
+class table{
+private:
+   int linenum;
+   int width;
+public:
+   table(int bitwidth);
+   ~table();
+   vec2 bittable;
+   int add();
+   void write(int linenum, int ad , int val);
+   int read(int linenum, int ad);
+};
 class list{
 private:
   int tablenum;
 public:
   list();
   ~list();
+  vector<table> t_list;
   void add();
   void del();
 };
 
-class table{
-private:
-   int linenum;
-   int width;
-public:
-   table();
-   ~table();
-   vec2 bittable;
-   int add(int bitwidth);
-   void write(int linenum, int ad , int val);
-   int read(int linenum, int ad);
-};
-
 list::list()
 {
+ cout << "list construct" << endl;
  tablenum=0;
- t_list = new table[1];
- cout << t_list[0].bittable[0][0]  << endl;
+ vector<table> t_list;
 }
 list::~list()
 {
- cout << "list deleted" << endl;
+ cout << "list destruct" << endl;
 }
 void list::add()
 {
  tablenum++;
- t_list.resize(tablenum,vec2(1));
- table t;
- t_list[tablenum]=t.bittable;
+ int width=pow(2,tablenum);
+ t_list.resize(tablenum,table(width));
+ cout << "table " << tablenum << "created" << endl;
 }
 
-table::table()
+void list::del()
+{
+ cout << "table " << tablenum << "deleted" << endl;
+ tablenum--;
+ int width=pow(2,tablenum);
+ t_list.resize(tablenum,table(width));
+}
+
+table::table(int bitwidth)
 {
   linenum=0;
-  width=1;
+  width=bitwidth;
   vec2 bittable(1,vector<int>(1,0));
-  cout << "table create " <<endl;
+  cout << "table construct" << endl;
 }
 table::~table()
 {
-  cout << "table deleted" << endl;
+  cout << "table destruct" << endl;
 }
 
-int table::add(int bitwidth)
+int table::add()
 {
   linenum++;
-//linenum * widthの領域確保
   bittable.resize(linenum,vector<int>(width,0));
+  cout << "line added width:" << width << endl;
   return linenum;
 }
 
 void table::write(int line,int ad , int val)
 {
-  bittable[line-1][ad]=val;
+  bittable[line][ad]=val;
 }
 
 int table::read(int line,int ad)
 {
-  return bittable[line-1][ad];
+  return bittable[line][ad];
 }
 
-
 int main (int argc, const char* argv[]){
- int current_line=0;
- int readval[2]={0};
- table *t_list;
- list l;
- l.list(t_list);
- /*
- current_line=t.add(2); // tableに1行目の領域追加
-
- t.write(1,0,5);//1行目の1個目の数字を5にする
-
- readval[0]=t.read(1,0);//読み出し
- readval[1]=t.read(1,1);
- cout << current_line << " " << readval[0] << "," << readval[1] << endl;
- current_line=t.add(2);// tableに2行目追加
- t.write(2,1,5);//2行目の2個目の数字を5にする
- readval[0]=t.read(2,0);
- readval[1]=t.read(2,1);
- cout << current_line << " " << readval[0] << "," << readval[1] << endl;
- */
- return 0;
+    int current_line=0;
+    int readval[8]={0};
+    list l;
+    l.add();
+    l.t_list[0].add();
+    l.t_list[0].write(0,0,1);
+    readval[0]=l.t_list[0].read(0,0);
+    readval[1]=l.t_list[0].read(0,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    l.add();
+    readval[0]=l.t_list[0].read(0,0);
+    readval[1]=l.t_list[0].read(0,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    l.t_list[1].add();
+    l.t_list[1].write(0,0,1);
+    l.t_list[1].add();
+    l.t_list[1].write(1,1,2);
+    readval[0]=l.t_list[1].read(0,0);
+    readval[1]=l.t_list[1].read(0,1);
+    readval[2]=l.t_list[1].read(0,2);
+    readval[3]=l.t_list[1].read(0,3);
+    cout << readval[0] << " " <<  readval[1] << " " << readval[2] << " " <<  readval[3] << endl;
+    readval[0]=l.t_list[1].read(1,0);
+    readval[1]=l.t_list[1].read(1,1);
+    readval[2]=l.t_list[1].read(1,2);
+    readval[3]=l.t_list[1].read(1,3);
+    cout << readval[0] << " " <<  readval[1] << " " << readval[2] << " " <<  readval[3] << endl;
+    l.t_list[0].add();
+    l.t_list[0].write(1,1,3);
+    readval[0]=l.t_list[0].read(0,0);
+    readval[1]=l.t_list[0].read(0,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    readval[0]=l.t_list[0].read(1,0);
+    readval[1]=l.t_list[0].read(1,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    l.del();
+    l.t_list[0].add();
+    l.t_list[0].write(2,0,4);
+    readval[0]=l.t_list[0].read(0,0);
+    readval[1]=l.t_list[0].read(0,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    readval[0]=l.t_list[0].read(1,0);
+    readval[1]=l.t_list[0].read(1,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    readval[0]=l.t_list[0].read(2,0);
+    readval[1]=l.t_list[0].read(2,1);
+    cout <<  readval[0] << " " <<  readval[1] << endl;
+    return 0;
 }
