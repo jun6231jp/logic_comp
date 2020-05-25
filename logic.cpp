@@ -3,6 +3,8 @@
 #include <cmath>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -31,6 +33,8 @@ public:
    int fileread(char* filename);
    vector<string> pattable;
    vector<string> value;
+   vector<int> pattern;
+   vector<int> truth;
 };
 class table{
 private:
@@ -76,23 +80,47 @@ int LookUpTable::fileread(char* filename)
   }
   while (getline(ifs, str))
   {
-    linenum++;
-    if (ptnlen!=0 && ptnlen!=str.find(' '))
-    {
+    while (str[0]==' ')//先頭のスペース削除
+      str = str.substr(1);
+    if (str[0]=='\0') //空行無視
+      continue;
+    if (ptnlen!=0 && ptnlen!=str.find(' '))//パターン長が一定でなければエラー
       return -1;
-    }
+    linenum++;
     ptnlen=str.find(' ');
     pattable.resize(linenum);
     value.resize(linenum);
+    pattern.resize(linenum);
+    truth.resize(linenum);
     pattable[linenum-1] = str.substr(0, ptnlen);
     value[linenum-1] = str.substr(ptnlen + 1);
-    while (value[linenum-1][0]==' ')
-      {
+    while (value[linenum-1][0]==' ')//パターンと真理値の間の空白が複数あれば切り詰める
         value[linenum-1] = value[linenum-1].substr(1);
+    if (value[linenum-1][0]!='0' && value[linenum-1][0]!='1')//真理値無しであればエラー
+       return -1;
+    if (value[linenum-1][1]!='\0' &&  value[linenum-1][1]!=' ')//真理値が2文字以上ならエラー
+       return -1;
+    value[linenum-1] = value[linenum-1].substr(0,1);
+    //パターンを数値変換
+    for (int i = ptnlen-1 ; i >=0 ; i--)
+    {
+      if (pattable[linenum-1][i]=='1')
+      {
+        pattern[linenum-1]+=pow(2,ptnlen-1-i);
       }
-    cout << pattable[linenum-1] << ":" << value[linenum-1] << endl;
+      else if (pattable[linenum-1][i]!='0')
+       return -1; //0, 1以外の文字が使われていればエラー
+    }
+    //真理値を数値変換
+    istringstream(value[linenum-1]) >> truth[linenum-1];
+    cout << pattable[linenum-1] << "/" << pattern[linenum-1] << ":" << value[linenum-1] << "/" << truth[linenum-1] << endl;
   }
-  cout <<  "pattern length " << ptnlen << endl;
+  //パターン重複があればエラー
+  sort(pattable.begin(), pattable.end());
+  if (unique(pattable.begin(), pattable.end()) < pattable.end())
+    return -1;
+  cout <<  "pattern length : " << ptnlen << endl;
+  cout << "table lines : " << linenum << endl;
   return 0;
 }
 
@@ -155,7 +183,11 @@ int table::read(int line,int ad)
 
 int main (int argc, char* argv[]){
     LookUpTable lut;
-    lut.fileread(argv[1]);
+    if (lut.fileread(argv[1])!=0)
+    {
+      cout << "table err" << endl;
+      return -1;
+    }
     list l;
     int readval[8]={0};
     l.add();
