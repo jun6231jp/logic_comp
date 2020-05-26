@@ -112,7 +112,7 @@ int LookUpTable::FileRead(char* filename)
       else if (PatternTable[LineNum-1][i]!='0')
        return -1; //0, 1以外の文字が使われていればエラー
     }
-    //真理値を数値変換
+    //真理値を数値変換　左が小桁
     istringstream(ValueList[LineNum-1]) >> TruthNumList[LineNum-1];
     cout << PatternNumList[LineNum-1] << ":" << TruthNumList[LineNum-1] << endl;
   }
@@ -134,34 +134,34 @@ void LookUpTable::TableOpt()
   NewTruthNumList.resize(LineNum);
   MaskBuff.resize(PatternLength); 
   MaskBitNumList.resize(PatternLength);
- for(int m=0 ; m < PatternLength; m++)
+ for(int m=0 ; m < PatternLength; m++)//削除可能列のチェック開始位置を巡回
  {
-  for(int i = 0; i < LineNum; i++)
+  for(int i = 0; i < LineNum; i++)//パターンと真理値をコピー
   {
     NewPatternNumList[i]=PatternNumList[i];
     NewTruthNumList[i]=TruthNumList[i];
   }
   for(int i = m; i < PatternLength + m; i++)
   {
-    int id = i;
+    int id = i;//削除可否チェック列番号
     if (id >= PatternLength)
-      id -= PatternLength;
-    MaskBuff[id]=1;
-    for(int j = 0; j < LineNum; j++)
+      id -= PatternLength;　
+    MaskBuff[id]=1;//mask 1が削除可　一旦1を代入しておく
+    for(int j = 0; j < LineNum; j++)//真理値表全行に対しチェック
     { 
-      NewPatternNumList[j]=NewPatternNumList[j]%(int)pow(2,id) + NewPatternNumList[j]/(int)pow(2,(id+1));
-      for(int k = 0; k < j; k++)
+      NewPatternNumList[j]=NewPatternNumList[j]%(int)pow(2,id) + NewPatternNumList[j]/(int)pow(2,(id+1));//対象列を除外する
+      for(int k = 0; k < j; k++)//除外した結果、真理値表で同一パターン有無チェック
       {
-        if(NewPatternNumList[j]==NewPatternNumList[k] && NewTruthNumList[j]==NewTruthNumList[k])
+        if(NewPatternNumList[j]==NewPatternNumList[k] && NewTruthNumList[j]==NewTruthNumList[k])//同一パターンで真理値も同じなら行削除
         {
           NewTruthNumList[j]=2;
           break;
         }  
-        else if(NewPatternNumList[j]==NewPatternNumList[k] && NewTruthNumList[j]!=NewTruthNumList[k] && NewTruthNumList[j]!=2)          {
+        else if(NewPatternNumList[j]==NewPatternNumList[k] && NewTruthNumList[j]!=NewTruthNumList[k] && NewTruthNumList[j]!=2) //同一パターンで真理値が異なれば列削除不可         {
           MaskBuff[id]=0;
           for(int l=0; l <= j ; l++)
           {
-            NewPatternNumList[j]=NewPatternNumList[j] + (int)pow(2,id);
+            NewPatternNumList[j]=NewPatternNumList[j] + (int)pow(2,id);//列削除したパターンをもとの値に戻す
           }
           break; 
         }     
@@ -175,7 +175,7 @@ void LookUpTable::TableOpt()
   for(int i=0; i < PatternLength; i++)
   {
     if(MaskBuff[i]==1)
-      MaskBitNumList[m]++;
+      MaskBitNumList[m]++;//削除した列数をカウントして保持
   }
   cout << "mask:" << MaskBitNumList[m] << endl;  
  }
