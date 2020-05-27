@@ -70,8 +70,8 @@ public:
   }
   void write(int linenum, int ad , int val){BitTable[linenum][ad]=val;}
   int read(int linenum, int ad){return BitTable[linenum][ad];}
-  //int comp(); //comp_2.comp_nをオーバーロードする
-  //int dup_del();
+  //int Comp(); //comp_2.comp_nをオーバーロードする
+  int SortUniq();
 };
 
 class List{
@@ -95,7 +95,8 @@ public:
     int width=pow(2,TableNum);
     TableList.resize(TableNum,Table(width));
   }
-  //void dsp();
+  //int DupDel();
+  //void Dsp();
 };
 
 int LookUpTable::FileRead(char* filename)
@@ -273,6 +274,17 @@ void LookUpTable::TableOpt()
     }
   cout << "OptPatternLength : " << OptPatternLength << endl;
   cout << "OptLineNum : " << OptLineNum << endl;
+}
+
+void Table::SortUniq()
+{
+  for(int i=0; i < LineNum; i++)
+    {
+      sort(BitTable[i].begin(),BitTable[i].end());//行方向ソート
+    }
+  sort(BitTable.begin(),BitTable.end()); //列方向ソート
+  BitTable.erase(unique(BitTable.begin(), BitTable.end()), BitTable.end());
+  LineNum=BitTable.size();
 }
 
 int main (int argc, char* argv[]){
