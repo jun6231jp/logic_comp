@@ -147,14 +147,14 @@ int LookUpTable::FileRead(char* filename)
       ValueList[LineNum-1] = ValueList[LineNum-1].substr(0,1);
       PatternNumList.resize(LineNum);
       TruthNumList.resize(LineNum);
-      for (int i = 0 ; i < PatternLength ; i++)//パターンを数値変換
+      for (int i = 0 ; i < PatternLength ; i++)//パターンを数値変換 左から小桁
         {
           if (PatternTable[LineNum-1][i]=='1')
             PatternNumList[LineNum-1]+=pow(2,i);
           else if (PatternTable[LineNum-1][i]!='0')
             return -1; //0, 1以外の文字が使われていればエラー
         }
-      istringstream(ValueList[LineNum-1]) >> TruthNumList[LineNum-1]; //真理値を数値変換　左が小桁
+      istringstream(ValueList[LineNum-1]) >> TruthNumList[LineNum-1]; //真理値を数値変換
       cout << PatternNumList[LineNum-1] << ":" << TruthNumList[LineNum-1] << endl;
     }
   sort(PatternTable.begin(), PatternTable.end());
