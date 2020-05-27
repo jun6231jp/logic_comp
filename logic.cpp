@@ -71,7 +71,7 @@ public:
   void write(int linenum, int ad , int val){BitTable[linenum][ad]=val;}
   int read(int linenum, int ad){return BitTable[linenum][ad];}
   //int Comp(); //comp_2.comp_nをオーバーロードする
-  int SortUniq();
+  void SortUniq();
 };
 
 class List{
