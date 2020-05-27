@@ -18,7 +18,7 @@ using namespace std;
  * 7. 型推論
  * 8. インライン関数
  * 9. C版以上に高速
- * */
+*/
 
 typedef vector< int > vec;
 typedef vector< vec > vec2;
@@ -28,8 +28,6 @@ class LookUpTable{
 private:
   int PatternLength;
   int LineNum;
-  int OptPatternLength;
-  int OptLineNum;
 public:
   LookUpTable()
   {
@@ -37,6 +35,8 @@ public:
     PatternLength=0;
   }
   ~LookUpTable(){}
+  int OptPatternLength;
+  int OptLineNum;
   int FileRead(char* filename);
   void TableOpt();
   vector<string> PatternTable;
@@ -68,16 +68,34 @@ public:
     cout << "line added width:" << Width << endl;
     return LineNum;
   }
-  void write(int linenum, int ad , int val){BitTable[linenum][ad]=val;}
-  int read(int linenum, int ad){return BitTable[linenum][ad];}
-  //int Comp(); //comp_2.comp_nをオーバーロードする
+  void write(int ad , int val){BitTable[LineNum-1][ad]=val;}
+  int read(int ad){return BitTable[LineNum-1][ad];}
   void SortUniq();
+  int Search(int target)
+  {
+    int res = 0;
+    for(int i = 0 ; i < LineNum; i++)
+      {
+	for(int j = 0; j < Width; j++)
+	  {
+	    if(BitTable[i][j]==target)
+	      {
+		res=1;
+		break;
+	      }
+	  }
+	if(res==1)
+	  break;
+      }
+    return res;
+  }
 };
 
 class List{
 private:
   int TableNum;
 public:
+  LookUpTable LUT;
   vector<Table> TableList;
   List(){TableNum=0;}
   ~List(){}
@@ -95,6 +113,7 @@ public:
     int width=pow(2,TableNum);
     TableList.resize(TableNum,Table(width));
   }
+  int Comp(); //comp_2.comp_nをオーバーロードする   
   //int DupDel();
   //void Dsp();
 };
@@ -167,9 +186,7 @@ void LookUpTable::TableOpt()
       BitValPara[m].resize(LineNum);
       MaskBuff[m].resize(PatternLength);
       for(int i = 0; i < LineNum; i++)//パターンと真理値をコピー
-        {
           NewPatternNumListPara[m][i]=PatternNumList[i];
-        }
       for(int i = m; i < PatternLength + m; i++)
         {
           int id = i;//削除可否チェック列番号
@@ -186,16 +203,12 @@ void LookUpTable::TableOpt()
                     {
                       MaskBuff[m][id]=0;//同一パターンで真理値が異なれば列削除不可
                       for(int l=0; l <= j ; l++)
-                        {
                           NewPatternNumListPara[m][l]+=BitValPara[m][l];
-                        }
                       break;
                     }
                 }
               if(MaskBuff[m][id]==0)
-                {
                   break;
-                }
             }
         }
       for(int i=0; i < PatternLength; i++)
@@ -206,9 +219,7 @@ void LookUpTable::TableOpt()
     }
   cout << "mask colmn : " ;
   for(int m=0; m<PatternLength; m++)
-    {
       cout  << MaskBitNumList[m] << " " ;
-    }
   cout << endl;
   int MaxMask=*max_element(MaskBitNumList.begin(),MaskBitNumList.end());//削除列数最大のマスクを採用
   int MaxAd=0;
@@ -244,9 +255,7 @@ void LookUpTable::TableOpt()
             }
         }
       else
-        {
           OptPatternLength++;
-        }
     }
   for(int j = 0; j < LineNum; j++)
     {
@@ -287,14 +296,74 @@ void Table::SortUniq()
   LineNum=BitTable.size();
 }
 
+int List::Comp()
+{
+  if(TableNum < 1)
+    add();
+  if(TableNum < 2)
+    {
+      add();
+      int SearchNum = 0;
+      int BitVal = 0;
+      for(int i = 0; i < LUT.OptLineNum; i++)
+	{
+	  if(LUT.OptTruthNumList[i]==1)
+	    {
+	      for(int j = 0; j < LUT.OptPatternLength; j++)
+		{
+		  BitVal = -(int)pow(2,j)*((LUT.OptPatternNumList[i]/(int)pow(2,j))%2);
+		  if(BitVal == 0)
+		    BitVal = (int)pow(2,j);
+		  SearchNum = LUT.OptPatternNumList[i]+BitVal;
+                  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
+                    {
+                      TableList[1].add();
+                      TableList[1].write(0,LUT.OptPatternNumList[i]);
+                      TableList[1].write(1,SearchNum);
+                    }
+		  else
+		    {
+		      for(int k = 0; k < LUT.OptLineNum; k++)
+			{
+			  if(LUT.OptPatternNumList[k]==SearchNum &&  LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
+			    {
+			      TableList[1].add();
+			      TableList[1].write(0,LUT.OptPatternNumList[i]);
+			      TableList[1].write(1,SearchNum);
+			      break;
+			    }
+			}
+		    }
+		}
+	    }
+	}
+      TableList[1].SortUniq();
+      for(int i = 0; i < LUT.OptLineNum; i++)//LUT内のパターンでTableList[1]に存在しないものをTableList[0]に登録する
+	{
+          if(LUT.OptTruthNumList[i]==1)
+            {
+	      if(!TableList[1].Search(LUT.OptPatternNumList[i]))
+		{
+                  TableList[0].add();
+                  TableList[1].write(0,LUT.OptPatternNumList[i]);
+		}
+	    }
+	}
+    }
+  else
+    {
+
+    }
+}
+
 int main (int argc, char* argv[]){
-  LookUpTable lut;
-  if (lut.FileRead(argv[1])!=0)
+  List l;
+  if (l.LUT.FileRead(argv[1]))
     {
       cout << "table err" << endl;
       return -1;
     }
-  lut.TableOpt();
-  List l;
+  l.LUT.TableOpt();
+  l.Comp();
   return 0;
 }
