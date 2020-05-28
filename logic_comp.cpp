@@ -82,17 +82,8 @@ public:
     for(int i=0; i < LineNum; i++)
       sort(BitTable[i].begin(),BitTable[i].end());//行方向ソート
     sort(BitTable.begin(),BitTable.end()); //列方向ソート
-
-    ReadAll();
-    
     BitTable.erase(unique(BitTable.begin(), BitTable.end()), BitTable.end());
-
-    ReadAll();
-    
     LineNum=BitTable.size();
-
-    ReadAll();
-    
   }
   int Search(int target)
   {
@@ -119,9 +110,11 @@ public:
     for(int i=0; i<Width; i++)
       {
         GroupSearchRes[i] = 1;
-	int SearchNum = BitTable[TargetLine][i] ^ (int)pow(2,bit);
-        if(!Search(SearchNum))
-	  GroupSearchRes[i] = 0;
+        int BitVal=-(int)pow(2,bit)*((BitTable[TargetLine][i]/(int)pow(2,bit))%2);
+        if(BitVal == 0)
+          BitVal = (int)pow(2,bit);
+        if(!Search(BitTable[TargetLine][i]+BitVal))
+          GroupSearchRes[i] = 0;
       }
     return *min_element(GroupSearchRes.begin(),GroupSearchRes.end());
   }
@@ -323,7 +316,6 @@ void LookUpTable::TableOpt()
           OptTruthNumList.resize(OptLineNum);
           OptPatternNumList[OptLineNum-1]=NewPatternNumList[i];
           OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
-	  cout << OptPatternNumList[OptLineNum-1] << ":" << OptTruthNumList[OptLineNum-1] << endl;
         }
     }
   cout << "OptPatternLength : " << OptPatternLength << endl;
@@ -340,45 +332,33 @@ int List::Comp()
       int SearchNum = 0;
       int BitVal = 0;
       vec2 CompList;
-      vec Forbidden;
       CompList.resize(LUT.OptLineNum);
-      Forbidden.resize(LUT.OptLineNum);
-      for(int i = 0; i < LUT.OptLineNum; i++)
-	CompList[i].resize(LUT.OptPatternLength);
 #pragma omp parallel for  //並列でグループ化可能な行を検索
       for(int i = 0; i < LUT.OptLineNum; i++)
         {
-          if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
+          if(LUT.OptTruthNumList[i]==1)
             {
-              //CompList[i].resize(LUT.OptPatternLength);
+              CompList[i].resize(LUT.OptLineNum);
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
-                  //CompList[i][j] = 0;
-		  SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
-		  //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << endl;
-		  /*
-		  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
-		    {
-		      //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << " dontcare" << endl;
-		      CompList[i][j] = 1;
-		      Forbidden[i]=1;
-		    }
-		    else
+                  CompList[i][j] = 1;
+                  BitVal = -(int)pow(2,j)*((LUT.OptPatternNumList[i]/(int)pow(2,j))%2);
+                  if(BitVal == 0)
+                    BitVal = (int)pow(2,j);
+                  SearchNum = LUT.OptPatternNumList[i]+BitVal;
+                  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
+                    CompList[i][j] = 1;
+                  else
                     {
-		  */
                       for(int k = 0; k < LUT.OptLineNum; k++)
                         {
-                          if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1 && Forbidden[k]==0)//LUT内にハミング距離1のパターンが存在し真理値が1,かつ1度も参照されていない
+                          if(LUT.OptPatternNumList[k]==SearchNum &&  LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
                             {
-			      //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << " found and truthnum 1" << endl;
                               CompList[i][j] = 1;
-			      //CompList[k][j] = 1;
-			      Forbidden[k]=1;
-                              Forbidden[i]=1;
                               break;
                             }
                         }
-		      //}
+                    }
                 }
             }
         }
@@ -388,16 +368,12 @@ int List::Comp()
             {
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
-		  cout << CompList[i][j] << " ";
                   if (CompList[i][j] == 1)
                     {
-		      //aaa
                       TableList[1].write(LUT.OptPatternNumList[i]);
-		      SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
                       TableList[1].write(SearchNum);
                     }
                 }
-	      cout << endl;
             }
         }
       TableList[1].SortUniq();
@@ -430,7 +406,7 @@ int List::Comp()
                 CompList[i][j] = 1;
             }
         }
-      for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込み
+      for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込 み
         {
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
@@ -438,9 +414,11 @@ int List::Comp()
                 {
                   for(int k = 0; k < TableList[TableNum-2].Width; k++)
                     {
-		      int SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
+                      int BitVal=-(int)pow(2,j)*((TableList[TableNum-2].BitTable[i][k]/(int)pow(2,j))%2);
+                      if(BitVal == 0)
+                        BitVal = (int)pow(2,j);
                       TableList[TableNum-1].write(TableList[TableNum-2].BitTable[i][k]);
-                      TableList[TableNum-1].write(SearchNum);
+                      TableList[TableNum-1].write(TableList[TableNum-2].BitTable[i][k]+BitVal);
                     }
                 }
             }
