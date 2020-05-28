@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <numeric>
 #include <omp.h>
 using namespace std;
 
@@ -87,29 +88,36 @@ public:
   }
   int Search(int target)
   {
+    vec SearchRes;
+    SearchRes.resize(LineNum+1);
 #pragma omp parallel for
     for(int i = 0 ; i < LineNum; i++)
       {
+        SearchRes[i] = 0;
         for(int j = 0; j < Width; j++)
           {
             if(BitTable[i][j]==target)
-                return 1;
+              SearchRes[i] = 1;
+            break;
           }
       }
-    return 0;
+    return *max_element(SearchRes.begin(),SearchRes.end());
   }
   int Search(int TargetLine, int bit)
   {
+    vec GroupSearchRes;
+    GroupSearchRes.resize(Width+1);
 #pragma omp parallel for
     for(int i=0; i<Width; i++)
       {
+        GroupSearchRes[i] = 1;
         int BitVal=-(int)pow(2,bit)*((BitTable[TargetLine][i]/(int)pow(2,bit))%2);
         if(BitVal == 0)
           BitVal = (int)pow(2,bit);
         if(!Search(BitTable[TargetLine][i]+BitVal))
-          return 0;
+          GroupSearchRes[i] = 0;
       }
-    return 1;
+    return *min_element(GroupSearchRes.begin(),GroupSearchRes.end());
   }
 };
 
@@ -321,9 +329,7 @@ int List::Comp()
                     BitVal = (int)pow(2,j);
                   SearchNum = LUT.OptPatternNumList[i]+BitVal;
                   if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
-                    {
-                      CompList[i][j] = 1;
-                    }
+                    CompList[i][j] = 1;
                   else
                     {
                       for(int k = 0; k < LUT.OptLineNum; k++)
@@ -358,9 +364,7 @@ int List::Comp()
           if(LUT.OptTruthNumList[i]==1)
             {
               if(!TableList[1].Search(LUT.OptPatternNumList[i]))
-                {
-                  TableList[0].write(LUT.OptPatternNumList[i]);
-                }
+                TableList[0].write(LUT.OptPatternNumList[i]);
             }
         }
       if (TableList[1].LineNum > 2)
@@ -380,9 +384,7 @@ int List::Comp()
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
               if(TableList[TableNum-2].Search(i,j))
-                {
-                  CompList[i][j] = 1;
-                }
+                CompList[i][j] = 1;
             }
         }
       for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込み
