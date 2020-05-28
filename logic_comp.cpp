@@ -68,7 +68,6 @@ public:
   {
     LineNum++;
     BitTable.resize(LineNum,vec(Width,0));
-    cout << "line added width:" << Width << endl;
     return LineNum;
   }
   void write(int val){
@@ -119,6 +118,17 @@ public:
       }
     return *min_element(GroupSearchRes.begin(),GroupSearchRes.end());
   }
+  void ReadAll(){
+    cout << "----- Bit Table ----" << endl;
+    for(int i=0; i<LineNum; i++){
+      cout << i << ": ";
+      for(int j=0; j<Width; j++){
+        cout << BitTable[i][j] << " ";
+      }
+      cout << endl;
+    }
+    cout << "--------------------" << endl;
+  }
 };
 
 class List{
@@ -136,6 +146,13 @@ public:
     cout << "table " << TableNum << "created" << endl;
   }
   int Comp();
+  void ReadAllList()
+  {
+    for(int i=0; i<TableNum; i++)
+      {
+        TableList[i].ReadAll();
+      }
+  }
   //int DupDel();
   //void Dsp();
 };
@@ -152,7 +169,7 @@ int LookUpTable::FileRead(char* filename)
         str = str.substr(1);
       if (str[0]=='\0') //空行無視
         continue;
-      if (PatternLength!=0 && PatternLength!=str.find(' '))//パターン長が一定でなければエラー
+      if (PatternLength!=0 && PatternLength!=str.find(' '))//パターン長が一定で なければエラー
         return -1;
       LineNum++;
       PatternLength=str.find(' ');
@@ -162,7 +179,7 @@ int LookUpTable::FileRead(char* filename)
       ValueList[LineNum-1] = str.substr(PatternLength + 1);
       while (ValueList[LineNum-1][0]==' ')//パターンと真理値の間の空白が複数あれば切り詰める
         ValueList[LineNum-1] = ValueList[LineNum-1].substr(1);
-      if (ValueList[LineNum-1][0]!='0' && ValueList[LineNum-1][0]!='1')//真理値無しであればエラー
+      if (ValueList[LineNum-1][0]!='0' && ValueList[LineNum-1][0]!='1')//真理値 無しであればエラー
         return -1;
       if (ValueList[LineNum-1][1]!='\0' && ValueList[LineNum-1][1]!=' ')//真理値が2文字以上ならエラー
         return -1;
@@ -272,7 +289,7 @@ void LookUpTable::TableOpt()
             {
               int BitVal=(int)pow(2,i)*((NewPatternNumList[j]/(int)pow(2,i))%2);
               int DiffVal=(int)pow(2,i)*(NewPatternNumList[j]/(int)pow(2,i+1));
-              NewPatternNumList[j]-=(BitVal+DiffVal);//対象列を除外し、下桁に詰める
+              NewPatternNumList[j]-=(BitVal+DiffVal);//対象列を除外し、下桁に詰 める
             }
         }
       else
@@ -324,6 +341,7 @@ int List::Comp()
               CompList[i].resize(LUT.OptLineNum);
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
+                  CompList[i][j] = 1;
                   BitVal = -(int)pow(2,j)*((LUT.OptPatternNumList[i]/(int)pow(2,j))%2);
                   if(BitVal == 0)
                     BitVal = (int)pow(2,j);
@@ -383,11 +401,12 @@ int List::Comp()
           CompList[i].resize(LUT.OptPatternLength);
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
+              CompList[i][j] = 0;
               if(TableList[TableNum-2].Search(i,j))
                 CompList[i][j] = 1;
             }
         }
-      for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込み
+      for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込 み
         {
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
@@ -405,6 +424,7 @@ int List::Comp()
             }
         }
       TableList[TableNum-1].SortUniq();
+      cout << TableList[TableNum-1].LineNum << endl;
       if (TableList[TableNum-1].LineNum > 2)
         //DupDel();
         return 1;
@@ -425,6 +445,6 @@ int main (int argc, char* argv[]){
     {
       //
     }
-
+  l.ReadAllList();
   return 0;
 }
