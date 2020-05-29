@@ -58,7 +58,10 @@ public:
 	    for(int j = 0 ; j < OptLineNum; j++)
 	      {
 		if(OptPatternNumList[j] == SearchNum)
-		  CompList[i] = 0;
+		  {
+		    CompList[i] = 0;
+		    break;
+		  }
 		else
 		  CompList[i] = 1;//見つからなければ1を返す
 	      }
@@ -103,10 +106,8 @@ public:
     sort(BitTable.begin(),BitTable.end()); //列方向ソート
     BitTable.erase(unique(BitTable.begin(), BitTable.end()), BitTable.end());
     LineNum=BitTable.size();
-
-    ReadAll();
   }
-  int Search(int target, int StartLine)
+  int Search(int target, int StartLine=0)
   {
     vec SearchRes;
     SearchRes.resize(LineNum);
@@ -139,7 +140,7 @@ public:
     int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit);
     for(int i=1; i<Width; i++)
       {
-	if (BitTable[TargetLine][i] & (int)pow(2,bit) != ChkNum)
+	if ((BitTable[TargetLine][i] & (int)pow(2,bit)) != ChkNum)
 	  return 0 ;
       }
     return 1;
@@ -415,7 +416,7 @@ int List::Comp()
         {
           if(LUT.OptTruthNumList[i]==1)
             {
-              if(!TableList[1].Search(LUT.OptPatternNumList[i],0))
+              if(!TableList[1].Search(LUT.OptPatternNumList[i]))
                 TableList[0].write(LUT.OptPatternNumList[i]);
             }
         }
@@ -479,10 +480,14 @@ int main (int argc, char* argv[]){
       return -1;
     }
   l.LUT.TableOpt();
+  
   while(l.Comp())
     {
-      //
+
     }
+  
+  //l.Comp();
+  //l.Comp();
   l.ReadAllList();
   return 0;
 }
