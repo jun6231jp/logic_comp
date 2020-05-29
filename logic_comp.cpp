@@ -13,7 +13,7 @@ using namespace std;
  * 1. table動的確保　済
  * 2. list動的確保 済
  * 3. スマートポインタで自動管理
- * 4. 参照渡しでメモリ削減
+ * 4. 参照渡しでメモリ削減 済
  * 5. オーバーロード 済
  * 6. 仮想関数
  * 7. 型推論
@@ -47,19 +47,18 @@ public:
   vec TableMask;
   vec OptPatternNumList;
   vec OptTruthNumList;
-  int Search(vec NumList, int bit, vec& CompList)
+  int Search(vec& NumList, int bit, vec& CompList)
   {
 #pragma omp parallel for
     for(int i = 0 ; i < NumList.size(); i++)
       {
 	if(CompList[i]==0)
 	  {
+	    int SearchNum=NumList[i]^(int)pow(2,bit);
 	    for(int j = 0 ; j < OptLineNum; j++)
 	      {
-		if(OptPatternNumList[j] == NumList[i]^(int)pow(2,bit))
-		  {
-		    CompList[i] = 0;
-		  }
+		if(OptPatternNumList[j] == SearchNum)
+		  CompList[i] = 0;
 		else
 		  CompList[i] = 1;//見つからなければ1を返す
 	      }
@@ -107,12 +106,12 @@ public:
 
     ReadAll();
   }
-  int Search(int target)
+  int Search(int target, int StartLine)
   {
     vec SearchRes;
     SearchRes.resize(LineNum);
 #pragma omp parallel for
-    for(int i = 0 ; i < LineNum; i++)
+    for(int i = StartLine ; i < LineNum; i++)
       {
         for(int j = 0; j < Width; j++)
           {
@@ -127,14 +126,23 @@ public:
   }
   int Search(int TargetLine, int bit, vec& CompList)
   {
-    CompList.resize(Width);
 #pragma omp parallel for
     for(int i=0; i<Width; i++)
       {
 	int SearchNum = BitTable[TargetLine][i] ^ (int)pow(2,bit);
-	CompList[i]= Search(SearchNum);
+	CompList[i]= Search(SearchNum,TargetLine+1);//下の行から探す
       }
     return *min_element(CompList.begin(),CompList.end());
+  }
+  int CompBit(int TargetLine, int bit)
+  {
+    int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit);
+    for(int i=1; i<Width; i++)
+      {
+	if (BitTable[TargetLine][i] & (int)pow(2,bit) != ChkNum)
+	  return 0 ;
+      }
+    return 1;
   }
   void ReadAll(){
     cout << "----- Bit Table ----" << endl;
@@ -407,7 +415,7 @@ int List::Comp()
         {
           if(LUT.OptTruthNumList[i]==1)
             {
-              if(!TableList[1].Search(LUT.OptPatternNumList[i]))
+              if(!TableList[1].Search(LUT.OptPatternNumList[i],0))
                 TableList[0].write(LUT.OptPatternNumList[i]);
             }
         }
@@ -419,8 +427,8 @@ int List::Comp()
   else //Nグループから2Nグループを抽出
     {
       add();
-      vec3 CompChk;
-      vec2 CompList;
+      vec3 CompChk; //行数、ビット反転位置、要素数
+      vec2 CompList;//行数、ビット反転位置
       CompList.resize(TableList[TableNum-2].LineNum);
       CompChk.resize(TableList[TableNum-2].LineNum);
 #pragma omp parallel for //並列でグループ化可能な行を検索
@@ -430,10 +438,14 @@ int List::Comp()
 	  CompChk[i].resize(LUT.OptPatternLength);
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
-              CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]); //行内の全要素がテーブル内にあるかdontcareか
-	      if(CompList[i][j]==0)
-		CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);
-            }
+	      CompChk[i][j].resize(TableList[TableNum-2].Width);
+	      if(TableList[TableNum-2].CompBit(i,j))//全要素で共通のビットか確認
+		{
+		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]); //行内の全要素のペアがテーブル内の対象行より下行にあるか確認
+		  if(CompList[i][j]==0)
+		    CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);//dontcareか確認
+		}
+	    }
         }
       for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込み
         {
@@ -443,7 +455,7 @@ int List::Comp()
                 {
                   for(int k = 0; k < TableList[TableNum-2].Width; k++)
                     {
-		      int HummingNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
+		      int HummingNum = TableList[TableNum-2].BitTable[i][k] ^ (int)pow(2,j);
                       TableList[TableNum-1].write(TableList[TableNum-2].BitTable[i][k]);
                       TableList[TableNum-1].write(HummingNum);
                     }
