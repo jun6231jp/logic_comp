@@ -47,6 +47,26 @@ public:
   vec TableMask;
   vec OptPatternNumList;
   vec OptTruthNumList;
+  int Search(vec NumList, int bit, vec& CompList)
+  {
+#pragma omp parallel for
+    for(int i = 0 ; i < NumList.size(); i++)
+      {
+	if(CompList[i]==0)
+	  {
+	    for(int j = 0 ; j < OptLineNum; j++)
+	      {
+		if(OptPatternNumList[j] == NumList[i]^(int)pow(2,bit))
+		  {
+		    CompList[i] = 0;
+		  }
+		else
+		  CompList[i] = 1;//見つからなければ1を返す
+	      }
+	  }
+      }
+    return *min_element(CompList.begin(),CompList.end());
+  }
 };
 
 class Table{
@@ -82,48 +102,39 @@ public:
     for(int i=0; i < LineNum; i++)
       sort(BitTable[i].begin(),BitTable[i].end());//行方向ソート
     sort(BitTable.begin(),BitTable.end()); //列方向ソート
-
-    ReadAll();
-    
     BitTable.erase(unique(BitTable.begin(), BitTable.end()), BitTable.end());
-
-    ReadAll();
-    
     LineNum=BitTable.size();
 
     ReadAll();
-    
   }
   int Search(int target)
   {
     vec SearchRes;
-    SearchRes.resize(LineNum+1);
+    SearchRes.resize(LineNum);
 #pragma omp parallel for
     for(int i = 0 ; i < LineNum; i++)
       {
-        SearchRes[i] = 0;
         for(int j = 0; j < Width; j++)
           {
-            if(BitTable[i][j]==target)
-              SearchRes[i] = 1;
-            break;
+	    if(BitTable[i][j]==target)
+	      {
+		SearchRes[i] = 1;
+		break;
+	      }
           }
       }
     return *max_element(SearchRes.begin(),SearchRes.end());
   }
-  int Search(int TargetLine, int bit)
+  int Search(int TargetLine, int bit, vec& CompList)
   {
-    vec GroupSearchRes;
-    GroupSearchRes.resize(Width+1);
+    CompList.resize(Width);
 #pragma omp parallel for
     for(int i=0; i<Width; i++)
       {
-        GroupSearchRes[i] = 1;
 	int SearchNum = BitTable[TargetLine][i] ^ (int)pow(2,bit);
-        if(!Search(SearchNum))
-	  GroupSearchRes[i] = 0;
+	CompList[i]= Search(SearchNum);
       }
-    return *min_element(GroupSearchRes.begin(),GroupSearchRes.end());
+    return *min_element(CompList.begin(),CompList.end());
   }
   void ReadAll(){
     cout << "----- Bit Table ----" << endl;
@@ -350,35 +361,29 @@ int List::Comp()
         {
           if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
             {
-              //CompList[i].resize(LUT.OptPatternLength);
+              CompList[i].resize(LUT.OptPatternLength);
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
-                  //CompList[i][j] = 0;
 		  SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
-		  //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << endl;
-		  /*
+		  
 		  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
 		    {
-		      //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << " dontcare" << endl;
 		      CompList[i][j] = 1;
 		      Forbidden[i]=1;
 		    }
 		    else
                     {
-		  */
-                      for(int k = 0; k < LUT.OptLineNum; k++)
+		      for(int k = 0; k < LUT.OptLineNum; k++)
                         {
-                          if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1 && Forbidden[k]==0)//LUT内にハミング距離1のパターンが存在し真理値が1,かつ1度も参照されていない
+                          if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
                             {
-			      //cout <<  LUT.OptPatternNumList[i] << ":" << SearchNum << " found and truthnum 1" << endl;
                               CompList[i][j] = 1;
-			      //CompList[k][j] = 1;
 			      Forbidden[k]=1;
                               Forbidden[i]=1;
                               break;
                             }
                         }
-		      //}
+		    }
                 }
             }
         }
@@ -388,16 +393,13 @@ int List::Comp()
             {
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
-		  cout << CompList[i][j] << " ";
                   if (CompList[i][j] == 1)
                     {
-		      //aaa
                       TableList[1].write(LUT.OptPatternNumList[i]);
-		      SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
-                      TableList[1].write(SearchNum);
+		      int HummingNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
+                      TableList[1].write(HummingNum);
                     }
                 }
-	      cout << endl;
             }
         }
       TableList[1].SortUniq();
@@ -417,17 +419,20 @@ int List::Comp()
   else //Nグループから2Nグループを抽出
     {
       add();
+      vec3 CompChk;
       vec2 CompList;
       CompList.resize(TableList[TableNum-2].LineNum);
+      CompChk.resize(TableList[TableNum-2].LineNum);
 #pragma omp parallel for //並列でグループ化可能な行を検索
       for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)
         {
           CompList[i].resize(LUT.OptPatternLength);
+	  CompChk[i].resize(LUT.OptPatternLength);
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
-              CompList[i][j] = 0;
-              if(TableList[TableNum-2].Search(i,j))
-                CompList[i][j] = 1;
+              CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]); //行内の全要素がテーブル内にあるかdontcareか
+	      if(CompList[i][j]==0)
+		CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);
             }
         }
       for(int i = 0 ; i < TableList[TableNum-2].LineNum; i++)//シリアルで書き込み
@@ -438,15 +443,14 @@ int List::Comp()
                 {
                   for(int k = 0; k < TableList[TableNum-2].Width; k++)
                     {
-		      int SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
+		      int HummingNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
                       TableList[TableNum-1].write(TableList[TableNum-2].BitTable[i][k]);
-                      TableList[TableNum-1].write(SearchNum);
+                      TableList[TableNum-1].write(HummingNum);
                     }
                 }
             }
         }
       TableList[TableNum-1].SortUniq();
-      cout << TableList[TableNum-1].LineNum << endl;
       if (TableList[TableNum-1].LineNum > 2)
         //DupDel();
         return 1;
