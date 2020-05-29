@@ -416,7 +416,7 @@ int List::Comp()
         {
           if(LUT.OptTruthNumList[i]==1)
             {
-              if(!TableList[1].Search(LUT.OptPatternNumList[i]))
+              if(TableList[1].LineNum == 0 || !TableList[1].Search(LUT.OptPatternNumList[i]))
                 TableList[0].write(LUT.OptPatternNumList[i]);
             }
         }
@@ -485,9 +485,6 @@ int main (int argc, char* argv[]){
     {
 
     }
-  
-  //l.Comp();
-  //l.Comp();
   l.ReadAllList();
   return 0;
 }
