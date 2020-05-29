@@ -98,6 +98,10 @@ public:
     BitTable[LineNum-1][Address%Width]=val;
     Address++;
   }
+  int read(int line , int ad)
+  {
+    return BitTable[line][ad];
+  }
   void SortUniq()
   {
 #pragma omp parallel for
@@ -145,6 +149,32 @@ public:
       }
     return 1;
   }
+  void LineDel(vec& DelList)
+  {
+    vec2 buff;
+    int NewLineNum = 0;
+    buff.resize(LineNum);
+    for(int i = 0; i < LineNum; i++)
+      {
+	buff[i].resize(Width);
+	if (DelList[i] == 0)
+	  {
+	    for(int j = 0; j < Width; j++)
+	      {
+		buff[NewLineNum][j] = BitTable[i][j];
+	      }
+	    NewLineNum++;
+	  }
+      }
+    BitTable.resize(NewLineNum);
+    for(int i = 0; i < NewLineNum; i++)
+      {
+	BitTable[i].resize(Width);
+	for(int j = 0; j < Width; j++)
+	  BitTable[i][j]=buff[i][j];
+      }
+    LineNum = NewLineNum;
+  }
   void ReadAll(){
     cout << "----- Bit Table ----" << endl;
     for(int i=0; i<LineNum; i++){
@@ -180,7 +210,7 @@ public:
         TableList[i].ReadAll();
       }
   }
-  //int DupDel();
+  void DupDel(int TableNo);
   //void Dsp();
 };
 
@@ -365,7 +395,6 @@ int List::Comp()
       Forbidden.resize(LUT.OptLineNum);
       for(int i = 0; i < LUT.OptLineNum; i++)
 	CompList[i].resize(LUT.OptPatternLength);
-#pragma omp parallel for  //並列でグループ化可能な行を検索
       for(int i = 0; i < LUT.OptLineNum; i++)
         {
           if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
@@ -374,7 +403,6 @@ int List::Comp()
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
 		  SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
-		  
 		  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
 		    {
 		      CompList[i][j] = 1;
@@ -382,7 +410,8 @@ int List::Comp()
 		    }
 		    else
                     {
-		      for(int k = 0; k < LUT.OptLineNum; k++)
+		      for(int k = i; k < LUT.OptLineNum; k++)
+		      //for(int k = 0; k < LUT.OptLineNum; k++)
                         {
                           if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
                             {
@@ -464,12 +493,34 @@ int List::Comp()
             }
         }
       TableList[TableNum-1].SortUniq();
+      DupDel(TableNum-2);
       if (TableList[TableNum-1].LineNum > 2)
-        //DupDel();
         return 1;
       else
         return 0;
     }
+}
+
+void List::DupDel(int TableNo)
+{
+  vec2 CompList;
+  vec DelList;
+  int reduction = 0;
+  CompList.resize(TableList[TableNo].LineNum);
+  DelList.resize(TableList[TableNo].LineNum);
+#pragma omp parallel for 
+  for(int i = 0 ; i < TableList[TableNo].LineNum ; i++)
+    {
+      CompList[i].resize(TableList[TableNo].Width);
+      for(int j = 0 ; j < TableList[TableNo].Width; j++)
+	{
+	  CompList[i][j]=TableList[TableNo].Search(TableList[TableNo].read(i,j),i+1);//テーブル内の下行に同じパターンが存在するか確認
+	  if(CompList[i][j]==0)
+	    CompList[i][j]=TableList[TableNo+1].Search(TableList[TableNo].read(i,j));//上位のテーブルに同じパターンが存在するか確認
+	}
+	DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
+    }
+    TableList[TableNo].LineDel(DelList);
 }
 
 int main (int argc, char* argv[]){
