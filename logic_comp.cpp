@@ -115,7 +115,7 @@ public:
   {
     vec SearchRes;
     SearchRes.resize(LineNum);
-#pragma omp parallel for
+    //#pragma omp parallel for
     for(int i = StartLine ; i < LineNum; i++)
       {
         for(int j = 0; j < Width; j++)
@@ -200,7 +200,7 @@ public:
     int width=pow(2,TableNum);
     TableNum++;
     TableList.resize(TableNum,Table(width));
-    cout << "table " << TableNum << "created" << endl;
+    cout << "table" << TableNum << " width:" << width << " created" << endl;
   }
   int Comp();
   void ReadAllList()
@@ -373,7 +373,6 @@ void LookUpTable::TableOpt()
           OptTruthNumList.resize(OptLineNum);
           OptPatternNumList[OptLineNum-1]=NewPatternNumList[i];
           OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
-	  cout << OptPatternNumList[OptLineNum-1] << ":" << OptTruthNumList[OptLineNum-1] << endl;
         }
     }
   cout << "OptPatternLength : " << OptPatternLength << endl;
@@ -493,9 +492,17 @@ int List::Comp()
             }
         }
       TableList[TableNum-1].SortUniq();
-      DupDel(TableNum-2);
+      cout << "Lines:" << TableList[TableNum-1].LineNum << endl;
       if (TableList[TableNum-1].LineNum > 2)
-        return 1;
+	{
+	  DupDel(TableNum-2);
+	  return 1;
+	}
+      else if (TableList[TableNum-1].LineNum > 0)
+	{
+	  DupDel(TableNum-2);
+	  return 0;
+	}
       else
         return 0;
     }
@@ -520,7 +527,8 @@ void List::DupDel(int TableNo)
 	}
 	DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
     }
-    TableList[TableNo].LineDel(DelList);
+  cout << "Duplication deleting" << endl;
+  TableList[TableNo].LineDel(DelList);
 }
 
 int main (int argc, char* argv[]){
@@ -532,10 +540,8 @@ int main (int argc, char* argv[]){
     }
   l.LUT.TableOpt();
   
-  while(l.Comp())
-    {
+  while(l.Comp()){}
 
-    }
   l.ReadAllList();
   return 0;
 }
