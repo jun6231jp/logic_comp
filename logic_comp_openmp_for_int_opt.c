@@ -8,25 +8,18 @@
 #include <omp.h>
 #include <math.h>
 
-//#define MTRACE
-
-#ifdef MTRACE
-#include <mcheck.h>
-#endif
-
-//ビット列を数値化しテーブル管理
 typedef struct
 {
-  int** table_int; //1bit違いの数群をまとめる　例：{{1,3},{2,6},{5,7},{8,9},{11,15}}
-  int size; //テーブル行数 例：5
-  int group_size;//bit幅 例：4
-  int current;//次に書き込むのが行内で何個めの数かを管理　例：1
+  int** table_int;
+  int size;
+  int group_size;
+  int current;
 } block_t;
-//テーブルを管理
+
 typedef struct
 {
-  block_t *block; //テーブルをリスト化
-  int block_num; //テーブル数
+  block_t *block;
+  int block_num;
 } list_t;
 
 static int pattern_len = 0;
@@ -128,7 +121,7 @@ comp_int(int i, int j, int bit)
     }
   return 0;
 }
-//テーブル管理リストを初期化
+
 void
 struct_init (void)
 {
@@ -141,7 +134,7 @@ struct_init (void)
   block_list.block[0].current = 0;
   block_list.block[block_list.block_num - 1].table_int[0][0] = 0;
 }
-//テーブルを追加
+
 void
 struct_add (void)
 {
@@ -160,7 +153,7 @@ struct_add (void)
     }
   block_list.block[block_list.block_num - 1].current = 0;
 }
-//テーブルに書き込み
+
 void
 table_int_write (int num, int tbl)
 {
@@ -186,7 +179,7 @@ table_int_write (int num, int tbl)
       block_list.block[bl_no].current = 0;
     }
 }
-//テーブルに行追加
+
 void
 table_add (int tbl)
 {
@@ -207,7 +200,7 @@ table_add (int tbl)
       block_list.block[bl_no].table_int[block_list.block[bl_no].size - 1][i] = 0;
     }
 }
-//テーブルをクリア
+
 void
 table_reset (int tbl)
 {
@@ -234,7 +227,7 @@ table_reset (int tbl)
       block_list.block[bl_no].table_int[block_list.block[bl_no].size - 1][i] = 0;
     }
 }
-//サイズが0になり不要となったブロックを解放
+
 void
 free_block (void)
 {
@@ -255,7 +248,7 @@ free_block (void)
       block_list.block[i].size=0;
     }
 }
-//すべての構造体を解放
+
 void
 free_struct (void)
 {
@@ -292,7 +285,7 @@ Qsort_num  (int *data, int dim)
 {
   qsort (data, dim, sizeof (int), compare_int);
 }
-//行列両方向にクイックソートするための比較関数
+
 int
 compare_matrix (const void *up, const void *down)
 {
@@ -310,7 +303,7 @@ compare_matrix (const void *up, const void *down)
     }
   return 0;
 }
-//行列両方向のクイックソート
+
 void
 Qsort_matrix  (int **data, int dim , int line)
 {
@@ -321,7 +314,7 @@ Qsort_matrix  (int **data, int dim , int line)
   sort_dim=dim;
   qsort (data, line, sizeof(int *), compare_matrix);
 }
-//重複行削除
+
 int
 sortuniq (int dim ,int line)
 {
@@ -349,7 +342,7 @@ sortuniq (int dim ,int line)
   uniq_temp_int=(int **) realloc (uniq_temp_int , sizeof(int *) * (count + 1));
   return count + 1;
 }
-//ファイルの1行の文字数をカウント
+
 int
 charcount (char *filename)
 {
@@ -374,7 +367,7 @@ charcount (char *filename)
   fclose (fp);
   return len + 2;
 }
-//真理値表最小化アルゴリズム
+
 int
 table_opt (char *filename, int start, int quiet)
 {
@@ -658,11 +651,12 @@ table_opt (char *filename, int start, int quiet)
     }
   return ret;
 }
-//重複行は省いてテーブルに書き込み
+
 int
 uniq (int dim)
 {
   int size = 0;
+
   size = block_list.block[block_list.block_num - 1].size - 1;
   uniq_temp_line = size;
   uniq_temp_int = (int**) malloc (sizeof (int*) * size);
@@ -703,7 +697,7 @@ uniq (int dim)
       return 0;
     }
 }
-//真理値表から2個まとめのグループを作りテーブル化する
+
 int
 logic_comp_2 ()
 {
@@ -850,7 +844,7 @@ logic_comp_2 ()
   free(comp2_temp_int);
   return res;
 }
-//N個のグループをまとめて2N個のグループを作りテーブル化
+
 int
 logic_comp_n (int dim)
 {
@@ -995,7 +989,7 @@ logic_comp_n (int dim)
   free (pattern_n_int);
   return res;
 }
-//N個のグループテーブルの行の数が2N個のグループテーブルやN個のグループテーブ ルの他行にすべて存在すれば行削除
+
 void
 duplicate_detect (int dim)
 {
@@ -1128,7 +1122,7 @@ duplicate_detect (int dim)
         }
     }
   linecp = block_list.block[block_list.block_num - 2].size;
-  for (int j = dup_temp_line + 1 ; j < linecp ; j++)
+  for (int j = dup_temp_line + 1; j < linecp ; j++)
     {
       free(block_list.block[block_list.block_num - 2].table_int[j]);
     }
@@ -1152,7 +1146,7 @@ duplicate_detect (int dim)
   free(rm);
   free_block();
 }
-//論理圧縮後の論理式表示
+
 int
 logic_function (int dim)
 {
@@ -1226,7 +1220,7 @@ logic_function (int dim)
   free(pattern);
   return 0;
 }
-//全解放
+
 void
 free_all (void)
 {
@@ -1246,19 +1240,20 @@ main (int argc, char *argv[])
 {
   int res;
   int dim = 2;
+  struct timeval start_timeval,
+    end_timeval;
   double sec_timeofday;
   FILE *fp;
   int charnum;
-#ifdef MTRACE
-  mtrace();
-#endif
   fp = fopen(argv[1],"r");
   if(argc < 2 || !fp)
     {
       return 1;
     }
-  struct timeval start_timeval,end_timeval;
-  fclose(fp);
+  else
+    {
+      fclose(fp);
+    }
   gettimeofday (&start_timeval, NULL);
   struct_init ();
   charnum = charcount (argv[1]);
@@ -1292,8 +1287,6 @@ main (int argc, char *argv[])
     (double) (end_timeval.tv_sec - start_timeval.tv_sec) +
     (double) (end_timeval.tv_usec - start_timeval.tv_usec) / 1000000;
   printf ("exec time %.6f s\n", sec_timeofday);
-#ifdef MTRACE
-  muntrace();
-#endif
+
   return 0;
 }
