@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include "logic_table.cpp"
+#include "lib/file_handler.cpp"
 using std::cout;
 using std::endl;
 using std::to_string;
@@ -53,6 +54,18 @@ void TableManagement::size(){
 }
 
 int main(int argc, const char* argv[]){
+  FileHandler f;
+  vec2 list;
+  int retcode = f.read(argc, argv[1], list);
+  //TODO: エラーハンドリング方法を学んだらリファクタする
+  if(retcode == 0){
+      f.read_all(list);
+      
+  } else {
+      return 1;
+  }
+  return 0;
+}
   TableManagement tm;
   tm.powadd();
   tm.size();

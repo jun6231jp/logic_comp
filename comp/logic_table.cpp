@@ -6,14 +6,17 @@ using std::to_string;
 
 typedef std::vector<int> vec;
 typedef std::vector< vec > vec2;
+typedef std::vector< vec2 > vec3;
 typedef std::string str;
 
 class LogicTable{
 private:
-  vec2 bittable;
+  vec3 qm;
 public:
-  LogicTable();
+  LogicTable(vec2 list);
   ~LogicTable();
+  int num_of_1(vec l);
+  void comp();
   void add(int bitwidth);
   int read(int row, int col);
   void read_all();
@@ -23,12 +26,53 @@ public:
   void test();
 };
 
-LogicTable::LogicTable(){
-  vec2 bittable(1, vec(1, 0));
-  cout << "table created" <<endl;
+/* LogicTableの中身
+  --
+  check flag: クワインマクラスキー法で既に圧縮されているか
+  1の数: 1000だったら1が1つ
+  略号: 積和標準形の1つの最小項目
+  最小項: 1000とか最小の項目
+  --
+  check flag, 1の数, 略号, 最小項
+  [
+      [0, 3, [0], [1,1,1,0]],
+      [0, 4, [1], [1,1,1,1]]
+  ]
+*/
+
+int LogicTable::num_of_1(vec l){
+    int sum = 0;
+    for(i=0; i<l.size(); i++){
+        if(l[i] == 1){
+          sum += 1;
+        }
+    }
+    return sum;
 }
+
+LogicTable::LogicTable(vec2 list){
+    cout << "new LogicTalbe" <<endl;
+    vec3 qm;
+    //TODO: 並列化
+    for(i=0; i<list.size(); i++){
+        vec2 row;
+        row.push_back(0);
+        row.push_back(num_of_1(list[i]));
+        row.push_back([]);
+        row.push_back(list[i]);
+        qm.push_back(row);
+    }
+}
+
 LogicTable::~LogicTable(){
-  cout << "table deleted" << endl;
+    cout << "delete LogicTable" << endl;
+}
+
+void LogicTable::sort(vec2 list){
+    //1の数を計算してheapに突っ込む
+    for(i=0; i<list.size(); i++){
+    
+    }
 }
 
 void LogicTable::add(int width){

@@ -72,6 +72,7 @@ int FileHandler::read(int argc, char* filepath, vec2 &t_list){
 
 }
 
+// FIXME: 委譲して使えるようにしたい
 void FileHandler::read_all(vec2 list){
   cout << "----- Bit Table ----" << endl;
   for(int i=0; i<list.size(); i++){
@@ -82,17 +83,4 @@ void FileHandler::read_all(vec2 list){
     cout << endl;
   }
   cout << "--------------------" << endl;
-}
-
-int main(int argc, char* argv[]){
-  FileHandler f;
-  vec2 list;
-  int retcode = f.read(argc, argv[1], list);
-  //TODO: エラーハンドリング方法を学んだらリファクタする
-  if(retcode == 0){
-      f.read_all(list);
-  } else {
-      return 1;
-  }
-  return 0;
 }
