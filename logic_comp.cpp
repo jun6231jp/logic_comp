@@ -21,6 +21,17 @@ using namespace std;
  * 9. C版以上に高速
  */
 
+/*
+0.Comp動作確認
+1.DupDel修正
+2.数式化
+3.無駄なループ削除
+4.並列化　~6/M
+
+5.アルゴリズム調査　~6/E
+6.組み込み　~7/E
+*/
+
 typedef vector< int > vec;
 typedef vector< vec > vec2;
 typedef vector< vec2 > vec3;
@@ -129,6 +140,27 @@ public:
       }
     return *max_element(SearchRes.begin(),SearchRes.end());
   }
+  int DupSearch(int target, int SelfLine)
+  {
+    vec SearchRes;
+    SearchRes.resize(LineNum);
+    //#pragma omp parallel for
+    for(int i = 0 ; i < LineNum; i++)
+      {
+	if(i != SelfLine)
+	  {
+	    for(int j = 0; j < Width; j++)
+	      {
+		if(BitTable[i][j]==target)
+		  {
+		    SearchRes[i] = 1;
+		    break;
+		  }
+	      }
+	  }
+      }
+    return *max_element(SearchRes.begin(),SearchRes.end());
+  }
   int Search(int TargetLine, int bit, vec& CompList)
   {
 #pragma omp parallel for
@@ -141,7 +173,7 @@ public:
   }
   int CompBit(int TargetLine, int bit)
   {
-    int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit);
+    int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit); // 11010010101 & 00010000000 = 00010000000
     for(int i=1; i<Width; i++)
       {
 	if ((BitTable[TargetLine][i] & (int)pow(2,bit)) != ChkNum)
@@ -373,6 +405,7 @@ void LookUpTable::TableOpt()
           OptTruthNumList.resize(OptLineNum);
           OptPatternNumList[OptLineNum-1]=NewPatternNumList[i];
           OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
+	  cout << OptPatternNumList[OptLineNum-1] << " " << OptTruthNumList[OptLineNum-1] << endl;
         }
     }
   cout << "OptPatternLength : " << OptPatternLength << endl;
@@ -396,20 +429,23 @@ int List::Comp()
 	CompList[i].resize(LUT.OptPatternLength);
       for(int i = 0; i < LUT.OptLineNum; i++)
         {
-          if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
-            {
+          //if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
+	  if(LUT.OptTruthNumList[i]==1)
+	  {
               CompList[i].resize(LUT.OptPatternLength);
               for(int j = 0; j < LUT.OptPatternLength; j++)
                 {
 		  SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
 		  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
 		    {
+		      cout << SearchNum << " not found" << endl;
 		      CompList[i][j] = 1;
 		      Forbidden[i]=1;
 		    }
 		    else
                     {
-		      for(int k = i; k < LUT.OptLineNum; k++)
+		      cout << SearchNum <<endl;
+		      for(int k = i + 1 ; k < LUT.OptLineNum; k++)
 		      //for(int k = 0; k < LUT.OptLineNum; k++)
                         {
                           if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
@@ -440,6 +476,8 @@ int List::Comp()
             }
         }
       TableList[1].SortUniq();
+          cout << "Table1 : " << TableList[0].LineNum << endl;
+          cout << "Table2 : " << TableList[1].LineNum << endl;
       for(int i = 0; i < LUT.OptLineNum; i++)//LUT内のパターンでTableList[1]に存在しないものをTableList[0]に登録する
         {
           if(LUT.OptTruthNumList[i]==1)
@@ -468,7 +506,7 @@ int List::Comp()
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
 	      CompChk[i][j].resize(TableList[TableNum-2].Width);
-	      if(TableList[TableNum-2].CompBit(i,j))//全要素で共通のビットか確認
+	      if(TableList[TableNum-2].CompBit(i,j))//全要素で共通のビットか確認 000 001 010 011 -> 100 101 110 111 
 		{
 		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]); //行内の全要素のペアがテーブル内の対象行より下行にあるか確認
 		  if(CompList[i][j]==0)
@@ -521,11 +559,11 @@ void List::DupDel(int TableNo)
       CompList[i].resize(TableList[TableNo].Width);
       for(int j = 0 ; j < TableList[TableNo].Width; j++)
 	{
-	  CompList[i][j]=TableList[TableNo].Search(TableList[TableNo].read(i,j),i+1);//テーブル内の下行に同じパターンが存在するか確認
-	  if(CompList[i][j]==0)
+	  CompList[i][j]=TableList[TableNo].DupSearch(TableList[TableNo].read(i,j),i);//テーブル内の下行に同じパターンが存在するか確認
+	  if(CompList[i][j]==0 && TableList[TableNo+1].LineNum > 0)
 	    CompList[i][j]=TableList[TableNo+1].Search(TableList[TableNo].read(i,j));//上位のテーブルに同じパターンが存在するか確認
 	}
-	DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
+      DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
     }
   cout << "Duplication deleting" << endl;
   TableList[TableNo].LineDel(DelList);
@@ -541,7 +579,7 @@ int main (int argc, char* argv[]){
   l.LUT.TableOpt();
   
   while(l.Comp()){}
-
+  l.DupDel(l.TableNum-2);
   l.ReadAllList();
   return 0;
 }
