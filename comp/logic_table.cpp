@@ -20,10 +20,11 @@ public:
   void write(int row, int col, int val);
   int row_size();
   int col_size(int row);
+  void test();
 };
 
 LogicTable::LogicTable(){
-  vec2 bittable(1,vec(1,0));
+  vec2 bittable(1, vec(1, 0));
   cout << "table created" <<endl;
 }
 LogicTable::~LogicTable(){
@@ -38,7 +39,7 @@ void LogicTable::write(int row, int col, int val){
   bittable[row][col]=val;
 }
 
-int LogicTable::read(int row,int col){
+int LogicTable::read(int row, int col){
   return bittable[row][col];
 }
 
@@ -62,9 +63,9 @@ void LogicTable::read_all(){
   cout << "--------------------" << endl;
 }
 
-int main (int argc, const char* argv[]){
+void LogicTable::test(){
+  //table
   LogicTable t;
-  // add
   t.add(2);
   t.add(3);
   t.add(4);
@@ -75,5 +76,4 @@ int main (int argc, const char* argv[]){
   t2.add(4);
   t.read_all();
   t2.read_all();
-  return 0;
 }
