@@ -564,7 +564,7 @@ void List::Dsp()
                       if(TableList[i].CompBit(j,k))
                         {
                           if((TableList[i].BitTable[j][0] & (int)pow(2,k))==0)
-                            cout << "['" << LUT.BitConv[k] << "]" ;
+                            cout << "[`" << LUT.BitConv[k] << "]" ;
                           else
                             cout << "[" << LUT.BitConv[k] << "]" ;
                         }
