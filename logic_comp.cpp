@@ -58,9 +58,18 @@ public:
   vec TableMask;
   vec OptPatternNumList;
   vec OptTruthNumList;
-  int Search(vec& NumList, int bit, vec& CompList)
+  int Search(int SearchNum) //対象の数が見つかれば1を返す
   {
-#pragma omp parallel for
+    for(int i = 0; i < OptLineNum; i++)
+      {
+	if(OptPatternNumList[i] == SearchNum)
+	  return 1;
+      }
+    return 0;
+  }
+  int Search(vec& NumList, int bit, vec& CompList) //LUT内にNumListの要素の反転値がすべて見つからなければ1を返す
+  {
+    //#pragma omp parallel for
     for(int i = 0 ; i < NumList.size(); i++)
       {
 	if(CompList[i]==0)
@@ -74,7 +83,7 @@ public:
 		    break;
 		  }
 		else
-		  CompList[i] = 1;//見つからなければ1を返す
+		  CompList[i] = 1;
 	      }
 	  }
       }
@@ -122,7 +131,7 @@ public:
     BitTable.erase(unique(BitTable.begin(), BitTable.end()), BitTable.end());
     LineNum=BitTable.size();
   }
-  int Search(int target, int StartLine=0)
+  int Search(int target, int StartLine=0) //テーブルに対象の数が1つでも見つかれば1を返す
   {
     vec SearchRes;
     SearchRes.resize(LineNum);
@@ -140,7 +149,7 @@ public:
       }
     return *max_element(SearchRes.begin(),SearchRes.end());
   }
-  int DupSearch(int target, int SelfLine)
+  int DupSearch(int target, int SelfLine)//テーブル内の自分の行以外から同じ数が見つかれば1を返す
   {
     vec SearchRes;
     SearchRes.resize(LineNum);
@@ -161,19 +170,40 @@ public:
       }
     return *max_element(SearchRes.begin(),SearchRes.end());
   }
-  int Search(int TargetLine, int bit, vec& CompList)
+  int DupSearch(int target, int SelfLine, vec& DelList)//対象をDelListが0かつSelLine以外から検索し見つかれば1を返す
   {
+    vec SearchRes;
+    SearchRes.resize(LineNum);
 #pragma omp parallel for
+    for(int i = 0 ; i < LineNum; i++)
+      {
+        if(i != SelfLine && DelList[i]==0)
+          {
+            for(int j = 0; j < Width; j++)
+              {
+                if(BitTable[i][j]==target)
+                  {
+                    SearchRes[i] = 1;
+                    break;
+                  }
+              }
+          }
+      }
+    return *max_element(SearchRes.begin(),SearchRes.end());
+  }
+  int Search(int TargetLine, int bit, vec& CompList)//テーブルの対象行の全要素の反転値が同一テーブルから見つかれば1を返す
+  {
+    //#pragma omp parallel for
     for(int i=0; i<Width; i++)
       {
 	int SearchNum = BitTable[TargetLine][i] ^ (int)pow(2,bit);
-	CompList[i]= Search(SearchNum,TargetLine+1);//下の行から探す
+	CompList[i]=DupSearch(SearchNum,TargetLine);
       }
     return *min_element(CompList.begin(),CompList.end());
   }
   int CompBit(int TargetLine, int bit)
   {
-    int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit); // 11010010101 & 00010000000 = 00010000000
+    int  ChkNum = BitTable[TargetLine][0] & (int)pow(2,bit);
     for(int i=1; i<Width; i++)
       {
 	if ((BitTable[TargetLine][i] & (int)pow(2,bit)) != ChkNum)
@@ -206,6 +236,7 @@ public:
 	  BitTable[i][j]=buff[i][j];
       }
     LineNum = NewLineNum;
+    cout << "new line num " << LineNum << endl;
   }
   void ReadAll(){
     cout << "----- Bit Table ----" << endl;
@@ -275,7 +306,7 @@ int LookUpTable::FileRead(char* filename)
       ValueList[LineNum-1] = ValueList[LineNum-1].substr(0,1);
       PatternNumList.resize(LineNum);
       TruthNumList.resize(LineNum);
-      for (int i = 0 ; i < PatternLength ; i++)//パターンを数値変換 左から小桁
+      for (int i = 0 ; i < PatternLength ; i++)//パターンを数値変換
         {
           if (PatternTable[LineNum-1][i]=='1')
             PatternNumList[LineNum-1]+=pow(2,i);
@@ -405,7 +436,6 @@ void LookUpTable::TableOpt()
           OptTruthNumList.resize(OptLineNum);
           OptPatternNumList[OptLineNum-1]=NewPatternNumList[i];
           OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
-	  cout << OptPatternNumList[OptLineNum-1] << " " << OptTruthNumList[OptLineNum-1] << endl;
         }
     }
   cout << "OptPatternLength : " << OptPatternLength << endl;
@@ -426,39 +456,31 @@ int List::Comp()
       CompList.resize(LUT.OptLineNum);
       Forbidden.resize(LUT.OptLineNum);
       for(int i = 0; i < LUT.OptLineNum; i++)
-	CompList[i].resize(LUT.OptPatternLength);
-      for(int i = 0; i < LUT.OptLineNum; i++)
         {
-          //if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
-	  if(LUT.OptTruthNumList[i]==1)
-	  {
-              CompList[i].resize(LUT.OptPatternLength);
-              for(int j = 0; j < LUT.OptPatternLength; j++)
-                {
+	  CompList[i].resize(LUT.OptPatternLength);
+          if(LUT.OptTruthNumList[i]==1 && Forbidden[i]==0)
+	    {
+	      for(int j = 0; j < LUT.OptPatternLength; j++)
+		{
 		  SearchNum = LUT.OptPatternNumList[i] ^ (int)pow(2,j);
 		  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
 		    {
-		      cout << SearchNum << " not found" << endl;
 		      CompList[i][j] = 1;
-		      Forbidden[i]=1;
 		    }
-		    else
-                    {
-		      cout << SearchNum <<endl;
-		      for(int k = i + 1 ; k < LUT.OptLineNum; k++)
-		      //for(int k = 0; k < LUT.OptLineNum; k++)
-                        {
-                          if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
-                            {
-                              CompList[i][j] = 1;
+		  else
+		    {
+		      for(int k = 0; k < LUT.OptLineNum; k++)
+			{
+			  if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
+			    {
+			      CompList[i][j] = 1;
 			      Forbidden[k]=1;
-                              Forbidden[i]=1;
-                              break;
-                            }
-                        }
+			      break;
+			    }
+			}
 		    }
-                }
-            }
+		}
+	    }
         }
       for(int i = 0; i < LUT.OptLineNum; i++)//シリアルで書き込み
         {
@@ -506,9 +528,9 @@ int List::Comp()
           for (int j = 0; j < LUT.OptPatternLength; j++)
             {
 	      CompChk[i][j].resize(TableList[TableNum-2].Width);
-	      if(TableList[TableNum-2].CompBit(i,j))//全要素で共通のビットか確認 000 001 010 011 -> 100 101 110 111 
+	      if(TableList[TableNum-2].CompBit(i,j))
 		{
-		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]); //行内の全要素のペアがテーブル内の対象行より下行にあるか確認
+		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]);
 		  if(CompList[i][j]==0)
 		    CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);//dontcareか確認
 		}
@@ -532,17 +554,12 @@ int List::Comp()
       TableList[TableNum-1].SortUniq();
       cout << "Lines:" << TableList[TableNum-1].LineNum << endl;
       if (TableList[TableNum-1].LineNum > 2)
-	{
-	  DupDel(TableNum-2);
 	  return 1;
-	}
-      else if (TableList[TableNum-1].LineNum > 0)
+      else
 	{
 	  DupDel(TableNum-2);
 	  return 0;
 	}
-      else
-        return 0;
     }
 }
 
@@ -559,14 +576,33 @@ void List::DupDel(int TableNo)
       CompList[i].resize(TableList[TableNo].Width);
       for(int j = 0 ; j < TableList[TableNo].Width; j++)
 	{
-	  CompList[i][j]=TableList[TableNo].DupSearch(TableList[TableNo].read(i,j),i);//テーブル内の下行に同じパターンが存在するか確認
+	  int SearchNum = TableList[TableNo].read(i,j);
+	  //LUTに存在しないか確認→削除予定フラグ
+	  CompList[i][j]=1 - LUT.Search(SearchNum);
+	  //上位のテーブルに存在するか確認→削除予定フラグ
 	  if(CompList[i][j]==0 && TableList[TableNo+1].LineNum > 0)
-	    CompList[i][j]=TableList[TableNo+1].Search(TableList[TableNo].read(i,j));//上位のテーブルに同じパターンが存在するか確認
+	    CompList[i][j]=TableList[TableNo+1].Search(SearchNum);
 	}
+      //行内の要素すべてに削除フラグがあるものを検索→削除実行フラグ
       DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
     }
-  cout << "Duplication deleting" << endl;
-  TableList[TableNo].LineDel(DelList);
+  //同位テーブルはシリアルで検索
+  for(int i = 0 ; i < TableList[TableNo].LineNum ; i++)
+    {
+      if (DelList[i] == 0)
+	{
+	  for(int j = 0 ; j < TableList[TableNo].Width; j++)
+	    {
+	      int SearchNum = TableList[TableNo].read(i,j);
+	      //同位のテーブルに存在するか確認→相手の行が削除不可フラグなら削除予定フラグに変更
+	      if(CompList[i][j]==0)
+		CompList[i][j]=TableList[TableNo].DupSearch(SearchNum,i,DelList);
+	    }
+	  DelList[i]=*min_element(CompList[i].begin(),CompList[i].end());
+	}
+    }
+    cout << "Duplication deleting" << endl;
+    TableList[TableNo].LineDel(DelList);
 }
 
 int main (int argc, char* argv[]){
@@ -577,9 +613,8 @@ int main (int argc, char* argv[]){
       return -1;
     }
   l.LUT.TableOpt();
-  
-  while(l.Comp()){}
-  l.DupDel(l.TableNum-2);
+  while(l.Comp())
+    l.DupDel(l.TableNum-2);
   l.ReadAllList();
   return 0;
 }
