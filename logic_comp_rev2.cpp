@@ -76,9 +76,7 @@ public:
             for(int j = 0 ; j < OptLineNum; j++)
               {
                 if(OptPatternNumList[j] == SearchNum)
-                  {
-                    return 0;
-                  }
+                  return 0;
               }
           }
       }
@@ -202,7 +200,6 @@ public:
     int width=pow(2,TableNum);
     TableNum++;
     TableList.resize(TableNum,Table(width));
-    //cout << "table" << TableNum << " width:" << width << " created" << endl;
   }
   int Comp();
   void DupDel(int TableNo);
@@ -451,8 +448,8 @@ int List::Comp()
   else //Nグループから2Nグループを抽出
     {
       add();
-      vec3 CompChk; //行数、ビット反転位置、要素数
-      vec2 CompList;//行数、ビット反転位置
+      vec3 CompChk;
+      vec2 CompList;
       CompList.resize(TableList[TableNum-2].LineNum);
       CompChk.resize(TableList[TableNum-2].LineNum);
 #pragma omp parallel for //並列でグループ化可能な行を検索
