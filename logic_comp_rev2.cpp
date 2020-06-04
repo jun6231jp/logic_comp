@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <omp.h>
+
 #include <cstdio>
 
 #define MTRACE
@@ -607,7 +608,9 @@ void List::Dsp()
 }
 
 int main (int argc, char* argv[]){
+#ifdef MTRACE
   mtrace();
+#endif
   List l;
   if (l.LUT.FileRead(argv[1]))
     {
@@ -618,6 +621,8 @@ int main (int argc, char* argv[]){
   while(l.Comp())
     l.DupDel(l.TableNum-2);
   l.Dsp();
+#ifdef MTRACE
   muntrace();
+#endif
   return 0;
 }
