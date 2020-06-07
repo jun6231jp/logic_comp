@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <numeric>
 #include <omp.h>
-
+#include<memory>
 #include <cstdio>
 
-#define MTRACE
+//#define MTRACE
 
 #ifdef MTRACE
 #include <mcheck.h>
@@ -26,14 +26,13 @@ using namespace std;
  * 5. オーバーロード 済
  * 6. 仮想関数
  * 7. 型推論
- * 8. インライン関数
+ * 8. インライン関数 済
  * 9. C版以上に高速
  */
 
 /*
 2.数式化
 3.無駄なループ削除
-4.並列化　~6/M
 5.アルゴリズム調査　~6/E
 6.組み込み　~7/E
 */
@@ -110,7 +109,7 @@ public:
     vec2 BitTable(1,vec(1,0));
   }
   ~Table(){}
-  int add()
+  inline int add()
   {
     LineNum++;
     BitTable.push_back(vec(Width,0));
@@ -137,6 +136,8 @@ public:
       {
         for(int j = 0; j < Width; j++)
           {
+            if(BitTable[i][j]>target)
+              break;
             if(BitTable[i][j]==target)
               return 1;
           }
@@ -160,33 +161,19 @@ public:
       }
     return 1;
   }
-  int DupSearch(int target, int SelfLine ,int pos=0,int StartLine=0)//テーブル内の自分の行以外から同じ数が見つかれば1を返す
+  inline int DupSearch(int target, int SelfLine ,int pos=0,int StartLine=0)//テーブル内の自分の行以外から同じ数が見つかれば1を返す
   {
     for(int i = StartLine ; i < LineNum; i++)
       {
+        int BeginAdd=0;
         if(i < SelfLine)
+          BeginAdd=pos;
+        for(int j = BeginAdd; j < Width; j++)
           {
-            for(int j = pos; j < Width; j++)
-              {
-                if(BitTable[i][j]>target)
-                  break;
-                if(BitTable[i][j]==target)
-                  return 1;
-              }
-          }
-        else if(i > SelfLine)
-          {
-            if(BitTable[i][0] > target)
-              {
-                break;
-              }
-            for(int j = 0; j < Width; j++)
-              {
-                if(BitTable[i][j]>target)
-                  break;
-                if(BitTable[i][j]==target)
-                  return 1;
-              }
+            if(BitTable[i][j]>target)
+              break;
+            if(BitTable[i][j]==target)
+              return 1;
           }
       }
     return 0;
@@ -224,7 +211,7 @@ public:
   LookUpTable LUT;
   vector<Table> TableList;
   List(){TableNum=0;}
-  ~List(){}
+  ~List(){cout << "end" << endl;}
   void add()
   {
     int width=pow(2,TableNum);
