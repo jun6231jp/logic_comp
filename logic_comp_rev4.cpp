@@ -66,6 +66,7 @@ public:
   vec BitConv;
   int Search(int SearchNum) //対象の数が見つかれば1を返す
   {
+    /*
     int start=0;
     int end=OptLineNum;
     int current=0;
@@ -81,35 +82,62 @@ public:
         else if(OptPatternNumList[current]>SearchNum)
           end=current;
       }
+    */
+
+    for(int i = 0; i < OptLineNum; i++)
+      {
+        if(OptPatternNumList[i] == SearchNum)
+          return 1;
+      }
+    return 0;
+
   }
   int Search(vec& NumList, int bit, vec& CompList) //CompListが0のものに対しLUT内にNumListの要素の反転値がすべて見つからなければ1を返す
   {
+    //int rtn = 1;
+    //#pragma omp parallel for
     for(int i = 0 ; i < NumList.size(); i++)
       {
         if(CompList[i]==0)
           {
             int SearchNum=NumList[i]^(int)pow(2,bit);
+            /*
             int start=0;
             int end=OptLineNum;
             int current=0;
-            for(int j = 0 ; j < OptLineNum ; j++)
+            for(int i = 0 ; i < OptLineNum ; i++)
               {
                 if(current==(start+end)/2)
-		  {
-		    CompList[i]=1;
-		    break;
-		  }
-		current=(start+end)/2;
+                  break;
+                current=(start+end)/2;
                 if(OptPatternNumList[current]==SearchNum)
-                  return 0;
+                  {
+                    rtn = 0;
+                    break;
+                  }
                 else if(OptPatternNumList[current]<SearchNum)
                   start=current;
                 else if(OptPatternNumList[current]>SearchNum)
                   end=current;
               }
+            */
+
+            for(int j = 0 ; j < OptLineNum; j++)
+              {
+                if(OptPatternNumList[j] == SearchNum)
+                  {
+                    //rtn = 0;
+                    //break;
+                    return 0;
+                  }
+              }
+
           }
+        //if(rtn==0)
+        //return rtn;
       }
     return 1;
+    //return rtn;
   }
 };
 
@@ -154,20 +182,12 @@ public:
   {
     for(int i = StartLine ; i < LineNum; i++)
       {
-        int startcol=0;
-        int endcol=Width;
-        int currentcol=0;
         for(int j = 0; j < Width; j++)
           {
-            if(currentcol==(startcol+endcol)/2)
+            if(BitTable[i][j]>target)
               break;
-            currentcol=(startcol+endcol)/2;
-            if(BitTable[i][currentcol]==target)
+            if(BitTable[i][j]==target)
               return 1;
-            else if(BitTable[i][currentcol]<target)
-              startcol=currentcol;
-            else if(BitTable[i][currentcol]>target)
-              endcol=currentcol;
           }
       }
     return 0;
@@ -175,7 +195,8 @@ public:
   int Search(int TargetLine, int bit, vec& CompList)//テーブルの対象行の全要素の反転値が同一テーブルから見つかれば1を返しCompListにフラグ格納
   {
     int StartLine=0;
-    int rtn = 1;
+    if(*max_element(CompList.begin(),CompList.end())==0)
+      StartLine=TargetLine+1;
     for(int i=0; i<Width; i++)
       {
         if(CompList[i]==0)
@@ -183,13 +204,17 @@ public:
             int SearchNum = BitTable[TargetLine][i] ^ (int)pow(2,bit);
             CompList[i]=DupSearch(SearchNum,TargetLine,i,StartLine);
             if(CompList[i]==0)
-	      rtn = 0;
-	  }
+              return 0;
+          }
       }
-    return rtn;
+    return 1;
   }
   inline int DupSearch(int target, int SelfLine ,int pos=0,int StartLine=0)//テーブル内の自分の行以外から同じ数が見つかれば1を返す
   {
+    /*
+    int start=StartLine;
+    int end=LineNum;
+    int current=0;
     for(int i = StartLine ; i < LineNum ; i++)
       {
         if(i!=SelfLine)
@@ -197,6 +222,9 @@ public:
             int BeginAdd=0;
             if(i < SelfLine)
               BeginAdd=pos;
+            if(current==(start+end)/2)
+              break;
+            current=(start+end)/2;
             int startcol=BeginAdd;
             int endcol=Width;
             int currentcol=0;
@@ -205,37 +233,47 @@ public:
                 if(currentcol==(startcol+endcol)/2)
                   break;
                 currentcol=(startcol+endcol)/2;
-                if(BitTable[i][currentcol]==target)
+                if(BitTable[current][currentcol]==target)
                   return 1;
-                else if(BitTable[i][currentcol]<target)
+                else if(BitTable[current][currentcol]<target)
                   startcol=currentcol;
-                else if(BitTable[i][currentcol]>target)
+                else if(BitTable[current][currentcol]>target)
                   endcol=currentcol;
               }
           }
       }
     return 0;
+    */
+
+    for(int i = StartLine ; i < LineNum; i++)
+      {
+        int BeginAdd=0;
+        if(i < SelfLine)
+          BeginAdd=pos;
+          if(i != SelfLine)
+          {
+            for(int j = BeginAdd; j < Width; j++)
+              {
+                if(BitTable[i][j]>target)
+                  break;
+                if(BitTable[i][j]==target)
+                  return 1;
+              }
+          }
+      }
+    return 0;
+
   }
   int DupSearch(int target, int SelfLine, vec& DelList)//対象をDelListが0かつSelLine以外から検索し見つかれば1を返す
   {
     for(int i = 0 ; i < LineNum; i++)
       {
-        if(DelList[i]==0 && i != SelfLine)
+        if(i != SelfLine && DelList[i]==0)
           {
-            int startcol=0;
-            int endcol=Width;
-            int currentcol=0;
             for(int j = 0; j < Width; j++)
               {
-                if(currentcol==(startcol+endcol)/2)
-                  break;
-                currentcol=(startcol+endcol)/2;
-                if(BitTable[i][currentcol]==target)
+                if(BitTable[i][j]==target)
                   return 1;
-                else if(BitTable[i][currentcol]<target)
-                  startcol=currentcol;
-                else if(BitTable[i][currentcol]>target)
-                  endcol=currentcol;
               }
           }
       }
@@ -398,7 +436,7 @@ void LookUpTable::TableOpt()
             {
               int BitVal=(int)pow(2,i)*((NewPatternNumList[j]/(int)pow(2,i))%2);
               int DiffVal=(int)pow(2,i)*(NewPatternNumList[j]/(int)pow(2,i+1));
-              NewPatternNumList[j]-=(BitVal+DiffVal);//対象列を除外し、下桁に詰める
+              NewPatternNumList[j]-=(BitVal+DiffVal);//対象列を除外し、下桁に詰 める
             }
         }
       else
@@ -437,16 +475,6 @@ void LookUpTable::TableOpt()
           OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
         }
     }
-  vec LutBuff;
-  LutBuff.resize(OptLineNum);
-  for(int i=0; i < OptLineNum; i++)//LUTをインデックス付きソートするためパターンと真理値を結合
-    LutBuff[i]=OptPatternNumList[i] * 2 + OptTruthNumList[i];
-  sort(LutBuff.begin(),LutBuff.end());
-  for(int i=0; i < OptLineNum; i++)//ソートした結合数を再びパターンと真理値に分離
-    {
-      OptTruthNumList[i]=LutBuff[i]&1;
-      OptPatternNumList[i]=LutBuff[i]>>1;
-   }
 }
 
 int List::Comp()
@@ -535,9 +563,9 @@ int List::Comp()
               CompChk[i][j].resize(TableList[TableNum-2].Width);
               if(TableList[TableNum-2].CompBit(i,j))
                 {
-		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]);
-		  if(CompList[i][j]==0)
-		    CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);//dontcareか確認
+                  CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],j,CompChk[i][j]);//dontcareか確認
+                  if(CompList[i][j]==0)
+                    CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]);
                 }
             }
         }
