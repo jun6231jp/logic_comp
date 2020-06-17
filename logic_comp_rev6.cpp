@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <omp.h>
-#include<memory>
+#include <memory>
 #include <cstdio>
 
 //#define MTRACE
@@ -37,7 +37,7 @@ using namespace std;
 6.組み込み　~7/E
 */
 
-typedef auto_ptr< int > vec;
+typedef vector< int > vec;
 typedef vector< vec > vec2;
 typedef vector< vec2 > vec3;
 
@@ -64,7 +64,7 @@ public:
   vec OptPatternNumList;
   vec OptTruthNumList;
   vec BitConv;
-  int Search(int SearchNum) //対象の数が見つかれば1を返す
+  inline int Search(int SearchNum) //対象の数が見つかれば1を返す
   {
     int start=0;
     int end=OptLineNum;
@@ -81,6 +81,7 @@ public:
         else if(OptPatternNumList[current]>SearchNum)
           end=current;
       }
+    return 0;
   }
   int Search(vec& NumList, int bit, vec& CompList) //CompListが0のものに対しLUT内にNumListの要素の反転値がすべて見つからなければ1を返す
   {
@@ -174,16 +175,21 @@ public:
   }
   int Search(int TargetLine, int bit, vec& CompList)//テーブルの対象行の全要素の反転値が同一テーブルから見つかれば1を返しCompListにフラグ格納
   {
-    int StartLine=0;
     int rtn = 1;
+    int StartLine=0;
     for(int i=0; i<Width; i++)
       {
         if(CompList[i]==0)
           {
             int SearchNum = BitTable[TargetLine][i] ^ (1 << bit); 
-            CompList[i]=DupSearch(SearchNum,TargetLine,i,StartLine);
-            if(CompList[i]==0)
-	      rtn = 0;
+            StartLine=DupSearch(SearchNum,TargetLine,i,StartLine);
+            if(StartLine >= 0)
+	      CompList[i]=1;
+	    else
+	      {
+		rtn=0;
+		StartLine=0;
+	      }
 	  }
       }
     return rtn;
@@ -197,24 +203,16 @@ public:
             int BeginAdd=0;
             if(i < SelfLine)
               BeginAdd=pos;
-            int startcol=BeginAdd;
-            int endcol=Width;
-            int currentcol=0;
             for(int j = BeginAdd; j < Width; j++)
               {
-                if(currentcol==(startcol+endcol)/2)
-                  break;
-                currentcol=(startcol+endcol)/2;
-                if(BitTable[i][currentcol]==target)
-                  return 1;
-                else if(BitTable[i][currentcol]<target)
-                  startcol=currentcol;
-                else if(BitTable[i][currentcol]>target)
-                  endcol=currentcol;
+		if(BitTable[i][j]>target)
+		  break;
+		if(BitTable[i][j]==target)
+                  return i;
               }
           }
       }
-    return 0;
+    return -1;
   }
   int DupSearch(int target, int SelfLine, vec& DelList)//対象をDelListが0かつSelLine以外から検索し見つかれば1を返す
   {
@@ -472,20 +470,17 @@ int List::Comp()
               for(int j = 0; j < OptPatternLength; j++)
                 {
                   SearchNum = LUT.OptPatternNumList[i] ^ (1<<j);
-                  if(find(LUT.OptPatternNumList.begin(),LUT.OptPatternNumList.end(),SearchNum)==LUT.OptPatternNumList.end())//dont care
-                    CompList[i][j] = 1;
-                  else
-                    {
-                      for(int k = 0; k < OptLineNum; k++)
-                        {
-                          if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
+		  for(int k = 0; k < OptLineNum; k++)
+		    {
+		      if(LUT.OptPatternNumList[k]==SearchNum && LUT.OptTruthNumList[k]==1)//LUT内にハミング距離1のパターンが存在し真理値が1
                             {
                               CompList[i][j] = 1;
                               Forbidden[k]=1;
                               break;
                             }
-                        }
-                    }
+		    }
+		  if(CompList[i][j] == 0 && !LUT.Search(SearchNum))//dont care
+		    CompList[i][j] = 1;
                 }
             }
         }
