@@ -38,13 +38,104 @@ using namespace std;
 7.DBに登録してクエリで操作
 */
 
-//typedef vector< int > vec;
-//typedef vector< vec > vec2;
-//typedef vector< vec2 > vec3;
-
-typedef unique_ptr<int[]> vec;
+typedef unique_ptr< int[] > vec;
 typedef unique_ptr< vec[] > vec2;
 typedef unique_ptr< vec2[] > vec3;
+typedef unique_ptr< string[] > vec_s;
+
+class u_ptr{
+private:
+  int Size = 0;
+public:
+  vec Table;
+  int init(int size)
+  {
+    Size = size;
+    Table = make_unique< int[] > (1);
+    for(int i = 0 ; i < Size; i++)
+      Table[i] = 0;
+  }
+  int add()
+  {
+    Size++;
+    Table[Size-1] = 0;
+    return Size;
+  }
+  //void sort();
+  //void uniq();
+};
+
+class u_ptr2{
+private:
+  int Size = 0;
+  int Width = 0;
+public:
+  vec2 Buff;
+  vec2 Table;
+  int init(int size, int width);
+  {
+    Width = width;
+    Size = size;
+    Table = make_unique< vec[] > (Size);
+    for(int i = 0 ; i < Size; i++)
+      {
+	Table[i]=make_unique< int[] >(1);
+        for(int j = 0; j < Width; j++)
+          Table[i][j] = 0;
+      }
+  }
+  int add()
+  {
+    Buff = make_unique< vec[] > (Size+1);
+    for(int i = 0 ; i < Size; i++)
+      Buff[i].swap(Table[i]);
+    Buff[Size]=make_unique< int[] >(1);
+    for(int j = 0 ; j < Width; j++)
+      Buff[Size][j] = 0;
+    Size++;
+    Table = make_unique< vec[] > (Size);
+    Table.swap(Buff);
+    return Size;
+  }
+  //void sort();
+  //void uniq();
+};
+
+class u_ptr3{
+private:
+  int Size = 0;
+  int Width = 0;
+  int Block = 0;
+public:
+  vec3 Buff;
+  vec3 Table;
+  int init(int block, int size, int width)
+  {
+    Block = block;
+    Size = size;
+    Width = width;
+    Table = make_unique< vec2[] > (Block);
+    for (int i = 0 ; i < Block; i++)
+      {
+	Table[i] = make_unique< vec[] > (Size);
+	for(int j = 0 ; j < Size; j++)
+	  {
+	    Table[i][j] = make_unique< int[] > (1);
+	    for(int k = 0; k < Width; k++)
+	      Table[i][j][k] = 0;
+	  }
+      }
+  }
+};
+
+class u_ptr_str{
+private:
+  int Size = 0;
+public:
+  vec2 Buff;
+  vec2 Table;
+  //int init(int num);
+};
 
 class LookUpTable{
 private:
@@ -61,8 +152,8 @@ public:
   int OptLineNum;
   int FileRead(char* filename);
   void TableOpt();
-  vector<string> PatternTable;
-  vector<string> ValueList;
+  vec_s PatternTable;
+  vec_s ValueList;
   vec PatternNumList;
   vec TruthNumList;
   vec TableMask;
