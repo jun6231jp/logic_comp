@@ -11,8 +11,8 @@ using namespace std;
 #include <mcheck.h>
 #endif
 
-typedef unique_ptr<unique_ptr<int[]>[]> vec2;
 typedef unique_ptr<int[]> vec;
+typedef unique_ptr<unique_ptr<int[]>[]> vec2;
 
 class ptr {
 private:
@@ -74,8 +74,8 @@ auto ptr::comp_idx(int** buff, int* uniq)
 void ptr::MatrixUniqSort ()
 {
   int index[Size] = {0};
-  int** buff = new int*[Size];
   int newsize = 0;
+  int** buff = new int*[Size];
   for (int i = 0 ; i < Size ; i++)
     buff[i] = new int[Width];
   int* uniq = new int[Size];
@@ -103,11 +103,11 @@ void ptr::MatrixUniqSort ()
 	  newsize++;
 	}
     }
-  Size = newsize;
   for (int i = 0 ; i < Size ; i++)
     delete [] buff[i];
   delete [] buff;
   delete [] uniq;
+  Size = newsize;
 }
 
 int main()
@@ -116,25 +116,27 @@ int main()
   mtrace();
 #endif
   unique_ptr <ptr> table(new ptr());
-  int width = 16;
-  int size = 50;
+  int width = 50;
+  int size = 200;
   table->set(width);
   for (int k = 0 ; k < size ; k++)
     {
       table->add();
       for (int i = 0 ; i < table->Width ; i++ )
 	{
-	  //table->write(10000 - i/2 - k/(i+1));
-	  table->write(100 - k/2 - i);
+	  table->write((size/3 + width) - k/3 - i);
 	}
     }
+  
   for (int j = 0 ; j < table->Size ; j++)
     {
       for(int i = 0 ; i < table->Width ; i++)
 	cout << table->Table[j][i] << " " ;
       cout << endl;
     }
+  cout << table->Size << "lines" << endl;
   cout << endl;
+  
   table->MatrixUniqSort();
   
   for (int j = 0 ; j < table->Size ; j++)
@@ -143,6 +145,8 @@ int main()
 	cout << table->Table[j][i] << " " ;
       cout << endl;
     }
+
+  cout << table->Size << "lines" << endl;
   
   table.reset();
   
