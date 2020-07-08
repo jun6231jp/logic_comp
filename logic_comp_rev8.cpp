@@ -24,7 +24,7 @@ using namespace std;
  * 3. スマートポインタで自動管理 済
  * 4. 参照渡しでメモリ削減 済
  * 5. オーバーロード 済
- * 6. 仮想関数
+ * 6. 仮想関数 無し
  * 7. 型推論  済
  * 8. インライン関数 済
  * 9. C版以上に高速
@@ -113,6 +113,7 @@ public:
   vec DelList;
   vec2 BitTable;
   vec2 Buff;
+  //bb
   Table(int bitwidth)
   {
     Width=bitwidth;
@@ -292,19 +293,25 @@ public:
   }
 };
 
+
 class List{
 public:
-  int TableNum;
+  int TableNum = 0;
   LookUpTable LUT;
+  
   vector<Table> TableList;
-  List(){TableNum=0;}
+  
+  List(){}
   ~List(){cout << "end" << endl;}
   void add()
   {
     int width=1 << TableNum;
     TableNum++;
-    TableList.resize(TableNum,Table(width));
+    //aa
+    cout << width << endl;
+    //TableList.resize(TableNum,Table(width));
   }
+  
   int Comp();
   void DupDel(int TableNo);
   void Dsp();
@@ -490,6 +497,7 @@ void LookUpTable::TableOpt()
       OptPatternNumList[i]=LutBuff[i]>>1;
    }
 }
+
 
 int List::Comp()
 {
@@ -696,6 +704,8 @@ int main (int argc, char* argv[]){
   mtrace();
 #endif
   List l;
+  l.add();
+  /*
   if (l.LUT.FileRead(argv[1]))
     {
       cout << "table err" << endl;
@@ -705,6 +715,7 @@ int main (int argc, char* argv[]){
   while(l.Comp())
     l.DupDel(l.TableNum-2);
   l.Dsp();
+  */
 #ifdef MTRACE
   muntrace();
 #endif
