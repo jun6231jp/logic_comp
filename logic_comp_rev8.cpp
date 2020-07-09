@@ -114,11 +114,12 @@ public:
   vec2 BitTable;
   vec2 Buff;
   //bb
+  Table(){}
   Table(int bitwidth)
   {
     Width=bitwidth;
-    BitTable = make_unique < vec[] >(1);
-    BitTable[0] = make_unique < int[] >(Width);
+    //BitTable = make_unique < vec[] >(1);
+    //BitTable[0] = make_unique < int[] >(Width);
   }
   ~Table(){}
   inline int add()
@@ -298,20 +299,19 @@ class List{
 public:
   int TableNum = 0;
   LookUpTable LUT;
-  
-  vector<Table> TableList;
-  
+  //aa
+  //vector<Table> TableList;
+  vector<Table*> TableList;
   List(){}
   ~List(){cout << "end" << endl;}
   void add()
   {
     int width=1 << TableNum;
     TableNum++;
-    //aa
-    cout << width << endl;
+    TableList.resize(TableNum);
+    TableList[TableNum-1] = new Table(width);
     //TableList.resize(TableNum,Table(width));
   }
-  
   int Comp();
   void DupDel(int TableNo);
   void Dsp();
@@ -544,25 +544,25 @@ int List::Comp()
                 {
                   if (CompList[i][j] == 1)
                     {
-                      TableList[1].write(LUT.OptPatternNumList[i]);
+                      TableList[1]->write(LUT.OptPatternNumList[i]);
                       int HummingNum = LUT.OptPatternNumList[i] ^ (1<<j);
-                      TableList[1].write(HummingNum);
+                      TableList[1]->write(HummingNum);
                     }
                 }
             }
         }
-      TableList[1].SortUniq();
+      TableList[1]->SortUniq();
       for(int i = 0; i < OptLineNum; i++)//LUT内のパターンでTableList[1]に存在しないものをTableList[0]に登録する
         {
           if(LUT.OptTruthNumList[i]==1)
             {
-              if(TableList[1].LineNum == 0 || !TableList[1].Search(LUT.OptPatternNumList[i]))
-                TableList[0].write(LUT.OptPatternNumList[i]);
+              if(TableList[1]->LineNum == 0 || !TableList[1]->Search(LUT.OptPatternNumList[i]))
+                TableList[0]->write(LUT.OptPatternNumList[i]);
             }
         }
-      cout << "Table1 : " << TableList[0].LineNum << endl;
-      cout << "Table2 : " << TableList[1].LineNum << endl;
-      if (TableList[1].LineNum > 1)
+      cout << "Table1 : " << TableList[0]->LineNum << endl;
+      cout << "Table2 : " << TableList[1]->LineNum << endl;
+      if (TableList[1]->LineNum > 1)
         return 1;
       else
         return 0;
@@ -570,8 +570,8 @@ int List::Comp()
   else //Nグループから2Nグループを抽出
     {
       add();
-      int TableLineNum=TableList[TableNum-2].LineNum;
-      int TableWidth=TableList[TableNum-2].Width;
+      int TableLineNum=TableList[TableNum-2]->LineNum;
+      int TableWidth=TableList[TableNum-2]->Width;
       vec3 CompChk;
       vec2 CompList;
       CompList = make_unique <vec[]> (TableLineNum);
@@ -584,11 +584,11 @@ int List::Comp()
           for (int j = 0; j < OptPatternLength; j++)
             {
               CompChk[i][j] = make_unique <int[]> (TableWidth);
-              if(TableList[TableNum-2].CompBit(i,j))
+              if(TableList[TableNum-2]->CompBit(i,j))
                 {
-		  CompList[i][j]=TableList[TableNum-2].Search(i,j,CompChk[i][j]);
+		  CompList[i][j]=TableList[TableNum-2]->Search(i,j,CompChk[i][j]);
 		  if(CompList[i][j]==0)
-		    CompList[i][j]=LUT.Search(TableList[TableNum-2].BitTable[i],TableWidth,j,CompChk[i][j]);//dontcareか確認
+		    CompList[i][j]=LUT.Search(TableList[TableNum-2]->BitTable[i],TableWidth,j,CompChk[i][j]);//dontcareか確認
                 }
             }
         }
@@ -600,16 +600,16 @@ int List::Comp()
                 {
                   for(int k = 0; k < TableWidth; k++)
                     {
-                      int HummingNum = TableList[TableNum-2].BitTable[i][k] ^ (1<<j);
-                      TableList[TableNum-1].write(TableList[TableNum-2].BitTable[i][k]);
-                      TableList[TableNum-1].write(HummingNum);
+                      int HummingNum = TableList[TableNum-2]->BitTable[i][k] ^ (1<<j);
+                      TableList[TableNum-1]->write(TableList[TableNum-2]->BitTable[i][k]);
+                      TableList[TableNum-1]->write(HummingNum);
                     }
                 }
             }
         }
-      TableList[TableNum-1].SortUniq();
-      cout << "Table" << TableList[TableNum-1].Width << " : " << TableList[TableNum-1].LineNum << endl;
-      if (TableList[TableNum-1].LineNum > 1)
+      TableList[TableNum-1]->SortUniq();
+      cout << "Table" << TableList[TableNum-1]->Width << " : " << TableList[TableNum-1]->LineNum << endl;
+      if (TableList[TableNum-1]->LineNum > 1)
         return 1;
       else
         {
@@ -623,68 +623,68 @@ void List::DupDel(int TableNo)
 {
   vec2 CompList;
   int ValidLineNum = 0;
-  CompList = make_unique <vec[]> (TableList[TableNo].LineNum);
-  TableList[TableNo].DelList = make_unique <int[]> (TableList[TableNo].LineNum);
-  TableList[TableNo].DelDone = 1;
+  CompList = make_unique <vec[]> (TableList[TableNo]->LineNum);
+  TableList[TableNo]->DelList = make_unique <int[]> (TableList[TableNo]->LineNum);
+  TableList[TableNo]->DelDone = 1;
 #pragma omp parallel for
-  for(int i = 0 ; i < TableList[TableNo].LineNum ; i++)
+  for(int i = 0 ; i < TableList[TableNo]->LineNum ; i++)
     {
-      CompList[i] = make_unique <int[]> (TableList[TableNo].Width);
-      TableList[TableNo].DelList[i]=1;
-      for(int j = 0 ; j < TableList[TableNo].Width; j++)
+      CompList[i] = make_unique <int[]> (TableList[TableNo]->Width);
+      TableList[TableNo]->DelList[i]=1;
+      for(int j = 0 ; j < TableList[TableNo]->Width; j++)
         {
-          int SearchNum = TableList[TableNo].BitTable[i][j];
+          int SearchNum = TableList[TableNo]->BitTable[i][j];
           CompList[i][j]=1 - LUT.Search(SearchNum);//LUTに存在しないか確認→削除予定フラグ
-          if(CompList[i][j]==0 && TableList[TableNo+1].LineNum > 0)//上位のテーブルに存在するか確認→削除予定フラグ
-            CompList[i][j]=TableList[TableNo+1].Search(SearchNum);
+          if(CompList[i][j]==0 && TableList[TableNo+1]->LineNum > 0)//上位のテーブルに存在するか確認→削除予定フラグ
+            CompList[i][j]=TableList[TableNo+1]->Search(SearchNum);
           if(CompList[i][j]==0)//行内に削除不可フラグが1つ以上あるか確認→削除不可フラグ
-            TableList[TableNo].DelList[i]=0;
+            TableList[TableNo]->DelList[i]=0;
         }
     }
-  for(int i = 0 ; i < TableList[TableNo].LineNum ; i++)//同位テーブルをシリアルで検索
+  for(int i = 0 ; i < TableList[TableNo]->LineNum ; i++)//同位テーブルをシリアルで検索
     {
-      if (TableList[TableNo].DelList[i] == 0)
+      if (TableList[TableNo]->DelList[i] == 0)
         {
-          TableList[TableNo].DelList[i]=1;
-          for(int j = 0 ; j < TableList[TableNo].Width; j++)
+          TableList[TableNo]->DelList[i]=1;
+          for(int j = 0 ; j < TableList[TableNo]->Width; j++)
             {
-              int SearchNum = TableList[TableNo].BitTable[i][j];
+              int SearchNum = TableList[TableNo]->BitTable[i][j];
               if(CompList[i][j]==0)//同位のテーブルに存在するか確認→相手の行が削除不可フラグなら削除予定フラグに変更
-                CompList[i][j]=TableList[TableNo].DupSearch(SearchNum,i,TableList[TableNo].DelList);
+                CompList[i][j]=TableList[TableNo]->DupSearch(SearchNum,i,TableList[TableNo]->DelList);
               if(CompList[i][j]==0)
                 {
-                  TableList[TableNo].DelList[i]=0;
+                  TableList[TableNo]->DelList[i]=0;
                   break;
                 }
             }
         }
     }
-  for(int i = 0 ; i < TableList[TableNo].LineNum ; i++)
+  for(int i = 0 ; i < TableList[TableNo]->LineNum ; i++)
     {
-      if(TableList[TableNo].DelList[i] == 0)
+      if(TableList[TableNo]->DelList[i] == 0)
 	ValidLineNum++;
     }
-  cout << "Duplication delete from Table" << TableList[TableNo].Width << " : " << ValidLineNum << endl;
+  cout << "Duplication delete from Table" << TableList[TableNo]->Width << " : " << ValidLineNum << endl;
 }
 
 void List::Dsp()
 {
   for(int i = TableNum-1 ; i >= 0 ; i--)
     {
-      if (TableList[i].LineNum > 0)
+      if (TableList[i]->LineNum > 0)
         {
           int w=0;
-          for(int j = 0; j < TableList[i].LineNum; j++)
+          for(int j = 0; j < TableList[i]->LineNum; j++)
             {
-              if (TableList[i].DelDone==0 || TableList[i].DelList[j]==0)
+              if (TableList[i]->DelDone==0 || TableList[i]->DelList[j]==0)
                 {
                   if(w > 0)
                     cout << " + " ;
                   for(int k = 0 ; k < LUT.OptPatternLength; k++)
                     {
-                      if(TableList[i].CompBit(j,k))
+                      if(TableList[i]->CompBit(j,k))
                         {
-                          if((TableList[i].BitTable[j][0] & (1<<k))==0)
+                          if((TableList[i]->BitTable[j][0] & (1<<k))==0)
                             cout << "[`" << LUT.BitConv[k] << "]" ;
                           else
                             cout << "[" << LUT.BitConv[k] << "]" ;
@@ -705,7 +705,7 @@ int main (int argc, char* argv[]){
 #endif
   List l;
   l.add();
-  /*
+  
   if (l.LUT.FileRead(argv[1]))
     {
       cout << "table err" << endl;
@@ -715,7 +715,7 @@ int main (int argc, char* argv[]){
   while(l.Comp())
     l.DupDel(l.TableNum-2);
   l.Dsp();
-  */
+  
 #ifdef MTRACE
   muntrace();
 #endif
