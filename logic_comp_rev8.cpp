@@ -113,13 +113,10 @@ public:
   vec DelList;
   vec2 BitTable;
   vec2 Buff;
-  //bb
   Table(){}
   Table(int bitwidth)
   {
     Width=bitwidth;
-    //BitTable = make_unique < vec[] >(1);
-    //BitTable[0] = make_unique < int[] >(Width);
   }
   ~Table(){}
   inline int add()
@@ -299,8 +296,6 @@ class List{
 public:
   int TableNum = 0;
   LookUpTable LUT;
-  //aa
-  //vector<Table> TableList;
   vector<Table*> TableList;
   List(){}
   ~List(){cout << "end" << endl;}
@@ -310,7 +305,6 @@ public:
     TableNum++;
     TableList.resize(TableNum);
     TableList[TableNum-1] = new Table(width);
-    //TableList.resize(TableNum,Table(width));
   }
   int Comp();
   void DupDel(int TableNo);
@@ -329,7 +323,7 @@ int LookUpTable::FileRead(char* filename)
         str = str.substr(1);
       if (str[0]=='\0') //空行無視
         continue;
-      if (PatternLength!=0 && PatternLength!=str.find(' '))//パターン長が一定で なければエラー
+      if (PatternLength!=0 && PatternLength!=(int)str.find(' '))//パターン長が一定で なければエラー
         return -1;
       LineNum++;
       PatternLength=str.find(' ');
@@ -344,16 +338,19 @@ int LookUpTable::FileRead(char* filename)
       if (ValueList[LineNum-1][1]!='\0' && ValueList[LineNum-1][1]!=' ')//真理値が2文字以上ならエラー
         return -1;
       ValueList[LineNum-1] = ValueList[LineNum-1].substr(0,1);
-      PatternNumList = make_unique <int[]> (LineNum);
-      TruthNumList = make_unique <int[]> (LineNum);
+    }
+  PatternNumList = make_unique <int[]> (LineNum);
+  TruthNumList = make_unique <int[]> (LineNum);
+  for (int j = 0; j < LineNum; j++)
+    {
       for (int i = 0 ; i < PatternLength ; i++)//パターンを数値変換
         {
-          if (PatternTable[LineNum-1][i]=='1')
-            PatternNumList[LineNum-1]+=1<<i;
-          else if (PatternTable[LineNum-1][i]!='0')
+          if (PatternTable[j][i]=='1')
+            PatternNumList[j]+=1<<i;
+          else if (PatternTable[j][i]!='0')
             return -1; //0, 1以外の文字が使われていればエラー
         }
-      istringstream(ValueList[LineNum-1]) >> TruthNumList[LineNum-1]; //真理値を数値変換
+      istringstream(ValueList[j]) >> TruthNumList[j]; //真理値を数値変換
     }
   sort(PatternTable.begin(), PatternTable.end());
   if (unique(PatternTable.begin(), PatternTable.end()) < PatternTable.end())//パターン重複があればエラー
@@ -382,7 +379,7 @@ void LookUpTable::TableOpt()
       BitValPara[m] = make_unique <int[]> (LineNum);
       MaskBuff[m] = make_unique <int[]> (PatternLength);
       for(int i = 0; i < LineNum; i++)//パターンと真理値をコピー
-        NewPatternNumListPara[m][i]=PatternNumList[i];
+	NewPatternNumListPara[m][i]=PatternNumList[i];
       for(int i = m; i < PatternLength + m; i++)
         {
           int id = i;//削除可否チェック列番号
@@ -446,7 +443,7 @@ void LookUpTable::TableOpt()
           for(int j = 0; j < LineNum; j++)
             {
               int BitVal=(1<<i)*((NewPatternNumList[j]/(1<<i))%2);
-              int DiffVal=(1<<i)*(NewPatternNumList[j]/(1<<i+1));
+              int DiffVal=(1<<i)*(NewPatternNumList[j]/(1<<(i+1)));
               NewPatternNumList[j]-=(BitVal+DiffVal);//対象列を除外し、下桁に詰める
             }
         }
@@ -463,6 +460,7 @@ void LookUpTable::TableOpt()
           NewBit++;
         }
     }
+  OptLineNum=0;
   for(int j = 0; j < LineNum; j++)
     {
       for(int k = 0; k < j; k++)//除外した結果、真理値表で同一パターン有無チェック
@@ -473,17 +471,19 @@ void LookUpTable::TableOpt()
               break;
             }
         }
+      if(NewTruthNumList[j]!=2)
+	OptLineNum++;
     }
-  OptLineNum=0;
+  OptPatternNumList = make_unique <int[]> (OptLineNum);
+  OptTruthNumList = make_unique <int[]> (OptLineNum);
+  int cur=0;
   for(int i = 0 ; i < LineNum; i++)//クラス配列に行削除しながらコピー
     {
       if(NewTruthNumList[i]!=2)
         {
-          OptLineNum++;
-          OptPatternNumList = make_unique <int[]> (OptLineNum);
-          OptTruthNumList = make_unique <int[]> (OptLineNum);
-          OptPatternNumList[OptLineNum-1]=NewPatternNumList[i];
-          OptTruthNumList[OptLineNum-1]=NewTruthNumList[i];
+          OptPatternNumList[cur]=NewPatternNumList[i];
+          OptTruthNumList[cur]=NewTruthNumList[i];
+	  cur++;
         }
     }
   vec LutBuff;
@@ -495,9 +495,8 @@ void LookUpTable::TableOpt()
     {
       OptTruthNumList[i]=LutBuff[i]&1;
       OptPatternNumList[i]=LutBuff[i]>>1;
-   }
+    }
 }
-
 
 int List::Comp()
 {
@@ -509,7 +508,6 @@ int List::Comp()
     {
       add();
       int SearchNum = 0;
-      int BitVal = 0;
       vec2 CompList;
       vec Forbidden;
       CompList = make_unique <vec[]> (OptLineNum);
