@@ -18,18 +18,6 @@
 
 using namespace std;
 
-/*
- * 1. table動的確保　済
- * 2. list動的確保 済
- * 3. スマートポインタで自動管理 済
- * 4. 参照渡しでメモリ削減 済
- * 5. オーバーロード 済
- * 6. 仮想関数 無し
- * 7. 型推論  済
- * 8. インライン関数 済
- * 9. C版以上に高速
- */
-
 typedef unique_ptr< int[] > vec;
 typedef unique_ptr< vec[] > vec2;
 typedef unique_ptr< vec2[] > vec3;
