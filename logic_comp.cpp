@@ -9,29 +9,6 @@
 #include <omp.h>
 using namespace std;
 
-/*
- * 1. table動的確保　済
- * 2. list動的確保 済
- * 3. スマートポインタで自動管理
- * 4. 参照渡しでメモリ削減 済
- * 5. オーバーロード 済
- * 6. 仮想関数
- * 7. 型推論
- * 8. インライン関数
- * 9. C版以上に高速
- */
-
-/*
-0.Comp動作確認
-1.DupDel修正
-2.数式化
-3.無駄なループ削除
-4.並列化　~6/M
-
-5.アルゴリズム調査　~6/E
-6.組み込み　~7/E
-*/
-
 typedef vector< int > vec;
 typedef vector< vec > vec2;
 typedef vector< vec2 > vec3;
